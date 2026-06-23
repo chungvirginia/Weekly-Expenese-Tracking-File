@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>每週消費追蹤</title>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a22;
+    --surface2: #22222e;
+    --border: #2e2e3e;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43d9a2;
+    --accent4: #ffd166;
+    --text: #e8e8f0;
+    --text2: #9090a8;
+    --text3: #5a5a70;
+    --mox: #00c9a7;
+    --boc: #4a90d9;
+    --amex: #c9a227;
+    --danger: #ff4d6d;
+    --warning: #ffd166;
+    --safe: #43d9a2;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Noto Sans CJK TC', sans-serif;
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    padding-bottom: 100px;
+  }
+
+  /* Header */
+  .header {
+    padding: 20px 20px 0;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .week-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .week-nav button {
+    background: var(--surface2);
+    border: none;
+    color: var(--text);
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .week-label { font-size: 13px; color: var(--text2); font-weight: 500; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    padding: 14px 20px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* Content */
+  .content { padding: 16px 20px; }
+
+  /* Budget Cards */
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text3);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    margin-top: 20px;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  .budget-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .budget-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .budget-card:active { transform: scale(0.97); }
+  .budget-card.full-width { grid-column: 1 / -1; }
+  .budget-card .card-accent {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .budget-card .card-icon {
+    font-size: 20px;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .budget-card .card-name {
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .budget-card .card-remaining {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 2px;
+  }
+  .budget-card .card-total {
+    font-size: 11px;
+    color: var(--text3);
+  }
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+  .budget-card.danger .card-remaining { color: var(--danger); }
+  .budget-card.warning .card-remaining { color: var(--warning); }
+  .budget-card.safe .card-remaining { color: var(--safe); }
+
+  /* Weekly Summary */
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .summary-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .summary-row:first-child { padding-top: 0; }
+  .summary-label { font-size: 13px; color: var(--text2); }
+  .summary-value { font-size: 14px; font-weight: 600; }
+  .summary-value.income { color: var(--safe); }
+  .summary-value.expense { color: var(--danger); }
+  .summary-value.neutral { color: var(--text); }
+
+  /* Big Balance */
+  .balance-hero {
+    background: linear-gradient(135deg, #1e1e2e 0%, #2a1f3d 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+  .balance-hero::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(108,99,255,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .balance-hero .balance-label { font-size: 12px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .balance-hero .balance-amount { font-size: 36px; font-weight: 800; letter-spacing: -1px; color: var(--text); }
+  .balance-hero .balance-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+  /* Transaction List */
+  .txn-list { display: flex; flex-direction: column; gap: 8px; }
+  .txn-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .txn-item:active { background: var(--surface2); }
+  .txn-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .txn-info { flex: 1; min-width: 0; }
+  .txn-desc { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txn-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .txn-amount { font-size: 15px; font-weight: 700; flex-shrink: 0; }
+  .txn-amount.expense { color: var(--danger); }
+  .txn-amount.income { color: var(--safe); }
+  .txn-delete {
+    width: 28px; height: 28px;
+    background: rgba(255,77,109,0.12);
+    border: none;
+    border-radius: 7px;
+    color: var(--danger);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .txn-item:hover .txn-delete,
+  .txn-item.show-delete .txn-delete { opacity: 1; }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text3);
+  }
+  .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* Bottom Nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    background: rgba(15,15,19,0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 10px 0 20px;
+    z-index: 200;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: opacity 0.2s;
+  }
+  .nav-item .nav-icon { font-size: 22px; }
+  .nav-item .nav-label { font-size: 10px; color: var(--text3); font-weight: 500; }
+  .nav-item.active .nav-label { color: var(--accent); }
+
+  /* FAB */
+  .fab {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 56px; height: 56px;
+    background: var(--accent);
+    border: none;
+    border-radius: 16px;
+    color: #fff;
+    font-size: 26px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(108,99,255,0.4);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 150;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .fab:active { transform: scale(0.93); box-shadow: 0 4px 12px rgba(108,99,255,0.3); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 300;
+    display: flex;
+    align-items: flex-end;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    padding: 20px 20px 40px;
+    width: 100%;
+    max-width: 430px;
+    margin: 0 auto;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-overlay.show .modal { transform: translateY(0); }
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+  .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+
+  /* Form */
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 12px; color: var(--text2); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; display: block; }
+  .form-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 16px;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  .form-input::placeholder { color: var(--text3); }
+
+  .amount-input-wrap { position: relative; }
+  .amount-prefix {
+    position: absolute;
+    left: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text2);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .amount-input-wrap .form-input { padding-left: 30px; }
+
+  .type-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .type-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .type-btn.active-expense { background: rgba(255,77,109,0.15); border-color: var(--danger); color: var(--danger); }
+  .type-btn.active-income { background: rgba(67,217,162,0.15); border-color: var(--safe); color: var(--safe); }
+
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .cat-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .cat-btn .cat-emoji { font-size: 20px; }
+  .cat-btn .cat-label { font-size: 10px; color: var(--text2); }
+  .cat-btn.active { border-color: var(--accent); background: rgba(108,99,255,0.15); }
+  .cat-btn.active .cat-label { color: var(--accent); }
+
+  .card-select {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .card-btn {
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .card-btn .card-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .card-btn .card-btn-name { font-size: 12px; color: var(--text2); font-weight: 500; }
+  .card-btn.active { border-color: var(--accent); background: rgba(108,99,255,0.12); }
+  .card-btn.active .card-btn-name { color: var(--text); }
+
+  .btn-submit {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 14px;
+    cursor: pointer;
+    margin-top: 8px;
+    font-family: inherit;
+    transition: opacity 0.2s;
+  }
+  .btn-submit:active { opacity: 0.85; }
+
+  /* Budget Settings */
+  .budget-setting-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .budget-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .budget-setting-info { flex: 1; }
+  .budget-setting-name { font-size: 14px; font-weight: 500; }
+  .budget-setting-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .budget-setting-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 8px 10px;
+    width: 90px;
+    text-align: right;
+    outline: none;
+    font-family: inherit;
+  }
+  .budget-setting-input:focus { border-color: var(--accent); }
+
+  /* Charts */
+  .chart-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+  .chart-title { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 14px; }
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-row-label { font-size: 12px; color: var(--text2); width: 60px; flex-shrink: 0; text-align: right; }
+  .bar-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+  .bar-row-val { font-size: 12px; font-weight: 600; width: 52px; text-align: right; flex-shrink: 0; }
+
+  .donut-wrap { display: flex; align-items: center; gap: 16px; }
+  .donut-legend { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-name { font-size: 12px; color: var(--text2); flex: 1; }
+  .legend-pct { font-size: 12px; font-weight: 600; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%; transform: translateX(-50%);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 400;
+    opacity: 0;
+    transition: opacity 0.3s, bottom 0.3s;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; bottom: 110px; }
+
+  /* Page views */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 0; }
+
+  /* Week days strip */
+  .week-strip {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .day-chip {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 4px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .day-chip.active { background: var(--accent); border-color: var(--accent); }
+  .day-chip .day-name { font-size: 10px; color: var(--text3); font-weight: 600; }
+  .day-chip.active .day-name { color: rgba(255,255,255,0.7); }
+  .day-chip .day-num { font-size: 14px; font-weight: 700; margin-top: 2px; }
+  .day-chip .day-dot { width: 4px; height: 4px; background: var(--accent3); border-radius: 50%; margin: 3px auto 0; }
+  .day-chip.active .day-dot { background: rgba(255,255,255,0.6); }
+  .day-chip .day-dot.hidden { visibility: hidden; }
+
+  .month-budget-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .month-bar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .month-bar-title { font-size: 13px; color: var(--text2); font-weight: 500; }
+  .month-bar-amounts { font-size: 12px; color: var(--text3); }
+  .month-bar-amounts span { color: var(--text); font-weight: 600; }
+  .month-progress { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; position: relative; }
+  .month-progress-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+  .month-progress-marker {
+    position: absolute;
+    top: -2px;
+    width: 2px;
+    height: 12px;
+    background: var(--text3);
+    border-radius: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-top">
+    <h1>💳 消費追蹤</h1>
+    <div class="week-nav">
+      <button onclick="changeWeek(-1)">‹</button>
+      <span class="week-label" id="weekLabel">本週</span>
+      <button onclick="changeWeek(1)">›</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('overview')">總覽</div>
+  <div class="tab" onclick="switchTab('transactions')">記帳</div>
+  <div class="tab" onclick="switchTab('analysis')">分析</div>
+  <div class="tab" onclick="switchTab('settings')">預算設定</div>
+</div>
+
+<!-- Overview Page -->
+<div class="content page active" id="page-overview">
+
+  <!-- Balance Hero -->
+  <div class="balance-hero">
+    <div class="balance-label">本週可用餘額</div>
+    <div class="balance-amount" id="heroBalance">$0</div>
+    <div class="balance-sub" id="heroSub">已用 $0 / 週預算 $0</div>
+  </div>
+
+  <!-- Month progress -->
+  <div class="month-budget-bar">
+    <div class="month-bar-header">
+      <span class="month-bar-title">本月進度</span>
+      <span class="month-bar-amounts">已用 <span id="monthUsed">$0</span> / <span id="monthBudget">$0</span></span>
+    </div>
+    <div class="month-progress">
+      <div class="month-progress-fill" id="monthProgressFill" style="width:0%;background:var(--safe)"></div>
+      <div class="month-progress-marker" id="monthDayMarker" style="left:50%"></div>
+    </div>
+  </div>
+
+  <div class="section-title">各帳戶剩餘預算</div>
+  <div class="budget-cards" id="budgetCards"></div>
+
+  <div class="section-title">今日支出</div>
+  <div class="week-strip" id="weekStrip"></div>
+  <div class="txn-list" id="todayTxns"></div>
+
+</div>
+
+<!-- Transactions Page -->
+<div class="content page" id="page-transactions">
+  <div class="section-title" style="margin-top:4px">所有記錄</div>
+  <div class="txn-list" id="allTxns"></div>
+</div>
+
+<!-- Analysis Page -->
+<div class="content page" id="page-analysis">
+  <div class="section-title" style="margin-top:4px">本週支出分類</div>
+  <div class="chart-wrap">
+    <div class="chart-title">分類佔比</div>
+    <div class="donut-wrap">
+      <canvas id="donutChart" width="120" height="120"></canvas>
+      <div class="donut-legend" id="donutLegend"></div>
+    </div>
+  </div>
+
+  <div class="section-title">各帳戶使用率</div>
+  <div class="chart-wrap">
+    <div class="chart-title">預算使用率</div>
+    <div class="bar-chart" id="usageBarChart"></div>
+  </div>
+
+  <div class="section-title">每日支出趨勢</div>
+  <div class="chart-wrap">
+    <div class="chart-title">本週每日支出</div>
+    <canvas id="lineChart" width="340" height="160" style="width:100%;height:auto"></canvas>
+  </div>
+</div>
+
+<!-- Settings Page -->
+<div class="content page" id="page-settings">
+  <div class="section-title" style="margin-top:4px">月度預算設定</div>
+  <div id="budgetSettingsList"></div>
+  <button class="btn-submit" onclick="saveBudgets()" style="margin-top:8px">儲存設定</button>
+
+  <div class="section-title">資料管理</div>
+  <div class="summary-card">
+    <div class="summary-row">
+      <span class="summary-label">清除本週記錄</span>
+      <button onclick="clearWeekData()" style="background:rgba(255,77,109,0.12);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit;">清除</button>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">清除所有記錄</span>
+      <button onclick="clearAllData()" style="background:rgba(255,77,109,0.12);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit;">清除</button>
+    </div>
+    <div class="summary-row" style="border-bottom:none">
+      <span class="summary-label">匯出 CSV</span>
+      <button onclick="exportCSV()" style="background:rgba(108,99,255,0.12);border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit;">匯出</button>
+    </div>
+  </div>
+
+  <div class="section-title">關於</div>
+  <div class="summary-card">
+    <div class="summary-row">
+      <span class="summary-label">版本</span>
+      <span class="summary-value neutral">v1.0</span>
+    </div>
+    <div class="summary-row" style="border-bottom:none">
+      <span class="summary-label">數據儲存</span>
+      <span class="summary-value neutral">本機 (localStorage)</span>
+    </div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fabBtn" onclick="openAddModal()">＋</button>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-item active" id="nav-overview" onclick="switchTab('overview')">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">總覽</span>
+  </div>
+  <div class="nav-item" id="nav-transactions" onclick="switchTab('transactions')">
+    <span class="nav-icon">📋</span>
+    <span class="nav-label">記帳</span>
+  </div>
+  <div class="nav-item" id="nav-analysis" onclick="switchTab('analysis')">
+    <span class="nav-icon">📊</span>
+    <span class="nav-label">分析</span>
+  </div>
+  <div class="nav-item" id="nav-settings" onclick="switchTab('settings')">
+    <span class="nav-icon">⚙️</span>
+    <span class="nav-label">設定</span>
+  </div>
+</div>
+
+<!-- Add Transaction Modal -->
+<div class="modal-overlay" id="addModal" onclick="handleModalClick(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>新增記錄</h2>
+
+    <div class="form-group">
+      <label class="form-label">類型</label>
+      <div class="type-toggle">
+        <button class="type-btn active-expense" id="typeExpense" onclick="setType('expense')">💸 支出</button>
+        <button class="type-btn" id="typeIncome" onclick="setType('income')">💰 收入</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">金額 (HKD)</label>
+      <div class="amount-input-wrap">
+        <span class="amount-prefix">$</span>
+        <input class="form-input" type="number" id="amountInput" placeholder="0.00" inputmode="decimal" step="0.01">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">描述</label>
+      <input class="form-input" type="text" id="descInput" placeholder="例：超市買菜、外賣">
+    </div>
+
+    <div class="form-group" id="catGroup">
+      <label class="form-label">類別</label>
+      <div class="cat-grid" id="catGrid"></div>
+    </div>
+
+    <div class="form-group" id="cardGroup">
+      <label class="form-label">帳戶 / 信用卡</label>
+      <div class="card-select" id="cardSelect"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">日期</label>
+      <input class="form-input" type="date" id="dateInput">
+    </div>
+
+    <button class="btn-submit" onclick="addTransaction()">確認新增</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// DATA & CONFIG
+// ============================================================
+const CARDS = [
+  { id: 'mox_bank',  name: 'MOX 儲蓄',   color: '#00c9a7', emoji: '🟢', defaultBudget: 15000 },
+  { id: 'mox_cc',    name: 'MOX Credit', color: '#00a896', emoji: '💳', defaultBudget: 5000  },
+  { id: 'boc_master',name: 'BOC Master', color: '#4a90d9', emoji: '🔵', defaultBudget: 4000  },
+  { id: 'boc_visa',  name: 'BOC Visa',   color: '#2e6db4', emoji: '🔷', defaultBudget: 3000  },
+  { id: 'amex',      name: 'AMEX',       color: '#c9a227', emoji: '🟡', defaultBudget: 4000  },
+  { id: 'cash',      name: '現金',       color: '#9090a8', emoji: '💵', defaultBudget: 4000  },
+];
+
+const CATEGORIES = [
+  // ── 對應月結單分析的 15 個主類別 ──
+  { id: 'online_shopping', label: '網購',     emoji: '🛍️', color: '#6c63ff' },  // 淘寶/AlipayHK/iHerb
+  { id: 'instalment',      label: '分期付款', emoji: '💳', color: '#fd79a8' },  // BOC 信用卡分期
+  { id: 'dept_store',      label: '百貨購物', emoji: '🏬', color: '#e17055' },  // 裕華國貨/誠品
+  { id: 'food',            label: '餐飲',     emoji: '🍜', color: '#ff6584' },  // Foodpanda/餐廳
+  { id: 'fashion',         label: '衣服時裝', emoji: '👗', color: '#fd79a8' },  // Lavenham/Facesss
+  { id: 'pet',             label: '寵物',     emoji: '🐱', color: '#ffd166' },  // 貓糧/獸醫
+  { id: 'health',          label: '醫療健康', emoji: '💊', color: '#ff9f43' },  // 眼科/診所
+  { id: 'education',       label: '教育進修', emoji: '📚', color: '#00b894' },  // HKU SPACE
+  { id: 'transport',       label: '交通',     emoji: '🚇', color: '#4a90d9' },  // 八達通/Uber
+  { id: 'digital',         label: '數碼訂閱', emoji: '📱', color: '#c9a227' },  // Apple/Google
+  { id: 'grocery',         label: '超市日用', emoji: '🛒', color: '#43d9a2' },  // 超市/日用品
+  { id: 'travel',          label: '旅遊',     emoji: '✈️', color: '#00cec9' },  // Trip.com/機票
+  { id: 'entertainment',   label: '娛樂文化', emoji: '🎬', color: '#a29bfe' },  // 電影/Pop Mart
+  { id: 'tax',             label: '稅務',     emoji: '🏛️', color: '#e84393' },  // 薪俸稅
+  { id: 'transfer',        label: '個人轉帳', emoji: '🔄', color: '#636e72' },  // 租金/家人
+  { id: 'other',           label: '其他',     emoji: '📌', color: '#b2bec3' },  // 雜項
+];
+
+// State
+let currentWeekOffset = 0;
+let selectedType = 'expense';
+let selectedCat = 'food';
+let selectedCard = 'mox_cc';
+let currentDay = new Date().getDay(); // 0=Sun
+
+// Load from localStorage
+function loadData() {
+  return JSON.parse(localStorage.getItem('budget_txns') || '[]');
+}
+function saveData(data) {
+  localStorage.setItem('budget_txns', JSON.stringify(data));
+}
+function loadBudgets() {
+  const saved = JSON.parse(localStorage.getItem('budget_settings') || '{}');
+  const result = {};
+  CARDS.forEach(c => {
+    result[c.id] = saved[c.id] !== undefined ? saved[c.id] : c.defaultBudget;
+  });
+  return result;
+}
+function saveBudgetData(data) {
+  localStorage.setItem('budget_settings', JSON.stringify(data));
+}
+
+// ============================================================
+// WEEK UTILS
+// ============================================================
+function getWeekRange(offset = 0) {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  return { start: monday, end: sunday };
+}
+
+function formatDate(d) {
+  return d.toISOString().split('T')[0];
+}
+
+function getWeekDates(offset = 0) {
+  const { start } = getWeekRange(offset);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    return d;
+  });
+}
+
+function isInWeek(dateStr, offset = 0) {
+  const { start, end } = getWeekRange(offset);
+  const d = new Date(dateStr);
+  return d >= start && d <= end;
+}
+
+function getMonthRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  return { start, end };
+}
+
+function isInMonth(dateStr) {
+  const { start, end } = getMonthRange();
+  const d = new Date(dateStr);
+  return d >= start && d <= end;
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function switchTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  document.getElementById('page-' + tab).classList.add('active');
+  document.getElementById('nav-' + tab)?.classList.add('active');
+
+  const tabs = document.querySelectorAll('.tab');
+  const tabMap = ['overview','transactions','analysis','settings'];
+  const idx = tabMap.indexOf(tab);
+  if (idx >= 0) tabs[idx].classList.add('active');
+
+  // Show/hide FAB
+  document.getElementById('fabBtn').style.display = tab === 'settings' ? 'none' : 'flex';
+
+  if (tab === 'analysis') renderAnalysis();
+  if (tab === 'settings') renderSettings();
+  if (tab === 'transactions') renderAllTxns();
+}
+
+function renderWeekLabel() {
+  const label = document.getElementById('weekLabel');
+  if (currentWeekOffset === 0) label.textContent = '本週';
+  else if (currentWeekOffset === -1) label.textContent = '上週';
+  else {
+    const { start } = getWeekRange(currentWeekOffset);
+    label.textContent = `${start.getMonth()+1}/${start.getDate()}`;
+  }
+}
+
+function changeWeek(dir) {
+  currentWeekOffset += dir;
+  if (currentWeekOffset > 0) currentWeekOffset = 0;
+  renderWeekLabel();
+  renderOverview();
+}
+
+function getCatById(id) { return CATEGORIES.find(c => c.id === id) || CATEGORIES[CATEGORIES.length-1]; }
+function getCardById(id) { return CARDS.find(c => c.id === id) || CARDS[0]; }
+
+function renderBudgetCards() {
+  const txns = loadData();
+  const budgets = loadBudgets();
+  const container = document.getElementById('budgetCards');
+
+  const weekTxns = txns.filter(t => isInWeek(t.date, currentWeekOffset) && t.type === 'expense');
+
+  container.innerHTML = CARDS.map(card => {
+    const spent = weekTxns.filter(t => t.card === card.id).reduce((s, t) => s + t.amount, 0);
+    const weekBudget = Math.round(budgets[card.id] / 4.33);
+    const remaining = weekBudget - spent;
+    const pct = Math.min(100, (spent / weekBudget) * 100);
+    const statusClass = pct >= 90 ? 'danger' : pct >= 70 ? 'warning' : 'safe';
+    const fillColor = pct >= 90 ? 'var(--danger)' : pct >= 70 ? 'var(--warning)' : card.color;
+
+    return `<div class="budget-card ${statusClass}" onclick="switchTab('analysis')">
+      <div class="card-accent" style="background:${card.color}"></div>
+      <span class="card-icon">${card.emoji}</span>
+      <div class="card-name">${card.name}</div>
+      <div class="card-remaining">$${remaining.toLocaleString()}</div>
+      <div class="card-total">週預算 $${weekBudget.toLocaleString()}</div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${pct}%;background:${fillColor}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderHero() {
+  const txns = loadData();
+  const budgets = loadBudgets();
+  const weekTxns = txns.filter(t => isInWeek(t.date, currentWeekOffset) && t.type === 'expense');
+  const totalWeekBudget = Object.values(budgets).reduce((s, v) => s + Math.round(v / 4.33), 0);
+  const totalSpent = weekTxns.reduce((s, t) => s + t.amount, 0);
+  const remaining = totalWeekBudget - totalSpent;
+
+  document.getElementById('heroBalance').textContent = `$${remaining.toLocaleString()}`;
+  document.getElementById('heroSub').textContent = `已用 $${totalSpent.toLocaleString()} / 週預算 $${totalWeekBudget.toLocaleString()}`;
+}
+
+function renderMonthBar() {
+  const txns = loadData();
+  const budgets = loadBudgets();
+  const monthTxns = txns.filter(t => isInMonth(t.date) && t.type === 'expense');
+  const totalMonthBudget = Object.values(budgets).reduce((s, v) => s + v, 0);
+  const totalSpent = monthTxns.reduce((s, t) => s + t.amount, 0);
+  const pct = Math.min(100, (totalSpent / totalMonthBudget) * 100);
+
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const dayPct = (now.getDate() / daysInMonth) * 100;
+
+  const color = pct > dayPct + 10 ? 'var(--danger)' : pct > dayPct ? 'var(--warning)' : 'var(--safe)';
+
+  document.getElementById('monthUsed').textContent = `$${totalSpent.toLocaleString()}`;
+  document.getElementById('monthBudget').textContent = `$${totalMonthBudget.toLocaleString()}`;
+  document.getElementById('monthProgressFill').style.width = pct + '%';
+  document.getElementById('monthProgressFill').style.background = color;
+  document.getElementById('monthDayMarker').style.left = dayPct + '%';
+}
+
+function renderWeekStrip() {
+  const dates = getWeekDates(currentWeekOffset);
+  const txns = loadData();
+  const today = formatDate(new Date());
+  const dayNames = ['一','二','三','四','五','六','日'];
+
+  const strip = document.getElementById('weekStrip');
+  strip.innerHTML = dates.map((d, i) => {
+    const ds = formatDate(d);
+    const hasTxn = txns.some(t => t.date === ds);
+    const isToday = ds === today;
+    return `<div class="day-chip ${isToday ? 'active' : ''}" onclick="selectDay('${ds}')">
+      <div class="day-name">${dayNames[i]}</div>
+      <div class="day-num">${d.getDate()}</div>
+      <div class="day-dot ${hasTxn ? '' : 'hidden'}"></div>
+    </div>`;
+  }).join('');
+}
+
+let selectedDay = formatDate(new Date());
+function selectDay(ds) {
+  selectedDay = ds;
+  renderWeekStrip();
+  renderTodayTxns();
+  // update active
+  document.querySelectorAll('.day-chip').forEach((el, i) => {
+    const dates = getWeekDates(currentWeekOffset);
+    el.classList.toggle('active', formatDate(dates[i]) === ds);
+  });
+}
+
+function renderTodayTxns() {
+  const txns = loadData().filter(t => t.date === selectedDay);
+  const container = document.getElementById('todayTxns');
+  if (txns.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>今日暫無記錄<br>點擊 ＋ 新增</p></div>`;
+    return;
+  }
+  container.innerHTML = txns.slice().reverse().map(t => renderTxnItem(t)).join('');
+}
+
+function renderAllTxns() {
+  const txns = loadData().slice().reverse();
+  const container = document.getElementById('allTxns');
+  if (txns.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>暫無記錄</p></div>`;
+    return;
+  }
+  container.innerHTML = txns.map(t => renderTxnItem(t)).join('');
+}
+
+function renderTxnItem(t) {
+  const cat = getCatById(t.category);
+  const card = getCardById(t.card);
+  const sign = t.type === 'expense' ? '-' : '+';
+  const cls = t.type === 'expense' ? 'expense' : 'income';
+  return `<div class="txn-item" onclick="toggleDelete(this)">
+    <div class="txn-icon" style="background:${cat.color}22">${cat.emoji}</div>
+    <div class="txn-info">
+      <div class="txn-desc">${t.desc || cat.label}</div>
+      <div class="txn-meta">${t.date} · ${card.name}</div>
+    </div>
+    <div class="txn-amount ${cls}">${sign}$${t.amount.toLocaleString()}</div>
+    <button class="txn-delete" onclick="deleteTxn('${t.id}',event)">✕</button>
+  </div>`;
+}
+
+function toggleDelete(el) {
+  el.classList.toggle('show-delete');
+}
+
+function deleteTxn(id, e) {
+  e.stopPropagation();
+  const data = loadData().filter(t => t.id !== id);
+  saveData(data);
+  renderOverview();
+  renderAllTxns();
+  showToast('已刪除記錄');
+}
+
+function renderOverview() {
+  renderHero();
+  renderMonthBar();
+  renderBudgetCards();
+  renderWeekStrip();
+  renderTodayTxns();
+}
+
+// ============================================================
+// ANALYSIS
+// ============================================================
+function renderAnalysis() {
+  const txns = loadData().filter(t => isInWeek(t.date, currentWeekOffset) && t.type === 'expense');
+  renderDonut(txns);
+  renderUsageBars(txns);
+  renderLineChart(txns);
+}
+
+function renderDonut(txns) {
+  const canvas = document.getElementById('donutChart');
+  const ctx = canvas.getContext('2d');
+  const legend = document.getElementById('donutLegend');
+
+  // Aggregate by category
+  const catMap = {};
+  txns.forEach(t => {
+    catMap[t.category] = (catMap[t.category] || 0) + t.amount;
+  });
+  const total = Object.values(catMap).reduce((s, v) => s + v, 0);
+  const entries = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
+
+  if (total === 0) {
+    ctx.clearRect(0, 0, 120, 120);
+    ctx.fillStyle = '#2e2e3e';
+    ctx.beginPath();
+    ctx.arc(60, 60, 50, 0, Math.PI * 2);
+    ctx.fill();
+    legend.innerHTML = '<div style="color:var(--text3);font-size:12px">暫無數據</div>';
+    return;
+  }
+
+  ctx.clearRect(0, 0, 120, 120);
+  let startAngle = -Math.PI / 2;
+  const colors = entries.map(([catId]) => getCatById(catId).color);
+
+  entries.forEach(([catId, val], i) => {
+    const slice = (val / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(60, 60);
+    ctx.arc(60, 60, 52, startAngle, startAngle + slice);
+    ctx.closePath();
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+    startAngle += slice;
+  });
+
+  // Center hole
+  ctx.beginPath();
+  ctx.arc(60, 60, 32, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a1a22';
+  ctx.fill();
+
+  // Center text
+  ctx.fillStyle = '#e8e8f0';
+  ctx.font = 'bold 13px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('$' + (total >= 1000 ? (total/1000).toFixed(1)+'k' : total), 60, 60);
+
+  legend.innerHTML = entries.map(([catId, val]) => {
+    const cat = getCatById(catId);
+    return `<div class="legend-item">
+      <div class="legend-dot" style="background:${cat.color}"></div>
+      <span class="legend-name">${cat.emoji} ${cat.label}</span>
+      <span class="legend-pct" style="color:${cat.color}">${Math.round(val/total*100)}%</span>
+    </div>`;
+  }).join('');
+}
+
+function renderUsageBars(txns) {
+  const budgets = loadBudgets();
+  const container = document.getElementById('usageBarChart');
+
+  container.innerHTML = CARDS.map(card => {
+    const spent = txns.filter(t => t.card === card.id).reduce((s, t) => s + t.amount, 0);
+    const weekBudget = Math.round(budgets[card.id] / 4.33);
+    const pct = weekBudget > 0 ? Math.min(100, (spent / weekBudget) * 100) : 0;
+    const color = pct >= 90 ? 'var(--danger)' : pct >= 70 ? 'var(--warning)' : card.color;
+    return `<div class="bar-row">
+      <span class="bar-row-label">${card.name}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span class="bar-row-val" style="color:${color}">${Math.round(pct)}%</span>
+    </div>`;
+  }).join('');
+}
+
+function renderLineChart(txns) {
+  const canvas = document.getElementById('lineChart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const dates = getWeekDates(currentWeekOffset);
+  const dayLabels = ['一','二','三','四','五','六','日'];
+  const dailySpend = dates.map(d => {
+    const ds = formatDate(d);
+    return txns.filter(t => t.date === ds).reduce((s, t) => s + t.amount, 0);
+  });
+
+  const maxVal = Math.max(...dailySpend, 100);
+  const padL = 10, padR = 10, padT = 16, padB = 28;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const step = chartW / 6;
+
+  // Grid lines
+  ctx.strokeStyle = '#2e2e3e';
+  ctx.lineWidth = 1;
+  [0, 0.25, 0.5, 0.75, 1].forEach(f => {
+    const y = padT + chartH * (1 - f);
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(W - padR, y);
+    ctx.stroke();
+  });
+
+  // Area fill
+  const pts = dailySpend.map((v, i) => ({
+    x: padL + i * step,
+    y: padT + chartH * (1 - v / maxVal)
+  }));
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, padT + chartH);
+  ctx.lineTo(pts[0].x, padT + chartH);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(108,99,255,0.12)';
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = '#6c63ff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Dots + labels
+  pts.forEach((p, i) => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = dailySpend[i] > 0 ? '#6c63ff' : '#2e2e3e';
+    ctx.fill();
+    ctx.strokeStyle = '#0f0f13';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Day label
+    ctx.fillStyle = '#5a5a70';
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(dayLabels[i], p.x, H - 6);
+
+    // Amount label
+    if (dailySpend[i] > 0) {
+      ctx.fillStyle = '#9090a8';
+      ctx.font = '9px -apple-system, sans-serif';
+      ctx.fillText('$' + (dailySpend[i] >= 1000 ? (dailySpend[i]/1000).toFixed(1)+'k' : dailySpend[i]), p.x, p.y - 8);
+    }
+  });
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function renderSettings() {
+  const budgets = loadBudgets();
+  const container = document.getElementById('budgetSettingsList');
+  container.innerHTML = CARDS.map(card => `
+    <div class="budget-setting-item">
+      <div class="budget-dot" style="background:${card.color}"></div>
+      <div class="budget-setting-info">
+        <div class="budget-setting-name">${card.emoji} ${card.name}</div>
+        <div class="budget-setting-sub">週預算 ≈ $${Math.round(budgets[card.id]/4.33).toLocaleString()}</div>
+      </div>
+      <input class="budget-setting-input" type="number" id="budget_${card.id}" value="${budgets[card.id]}" inputmode="numeric">
+    </div>
+  `).join('');
+}
+
+function saveBudgets() {
+  const data = {};
+  CARDS.forEach(c => {
+    const val = parseFloat(document.getElementById('budget_' + c.id).value);
+    data[c.id] = isNaN(val) ? c.defaultBudget : val;
+  });
+  saveBudgetData(data);
+  renderOverview();
+  renderSettings();
+  showToast('✅ 預算設定已儲存');
+}
+
+// ============================================================
+// ADD TRANSACTION MODAL
+// ============================================================
+function openAddModal() {
+  // Set today's date
+  document.getElementById('dateInput').value = formatDate(new Date());
+  document.getElementById('amountInput').value = '';
+  document.getElementById('descInput').value = '';
+  setType('expense');
+  renderCatGrid();
+  renderCardSelect();
+  document.getElementById('addModal').classList.add('show');
+}
+
+function handleModalClick(e) {
+  if (e.target === document.getElementById('addModal')) {
+    document.getElementById('addModal').classList.remove('show');
+  }
+}
+
+function setType(type) {
+  selectedType = type;
+  document.getElementById('typeExpense').className = 'type-btn' + (type === 'expense' ? ' active-expense' : '');
+  document.getElementById('typeIncome').className = 'type-btn' + (type === 'income' ? ' active-income' : '');
+  document.getElementById('catGroup').style.display = type === 'expense' ? 'block' : 'none';
+  document.getElementById('cardGroup').style.display = 'block';
+}
+
+function renderCatGrid() {
+  const grid = document.getElementById('catGrid');
+  grid.innerHTML = CATEGORIES.map(c => `
+    <button class="cat-btn ${c.id === selectedCat ? 'active' : ''}" onclick="selectCat('${c.id}')">
+      <span class="cat-emoji">${c.emoji}</span>
+      <span class="cat-label">${c.label}</span>
+    </button>
+  `).join('');
+}
+
+function selectCat(id) {
+  selectedCat = id;
+  renderCatGrid();
+}
+
+function renderCardSelect() {
+  const sel = document.getElementById('cardSelect');
+  sel.innerHTML = CARDS.map(c => `
+    <button class="card-btn ${c.id === selectedCard ? 'active' : ''}" onclick="selectCard('${c.id}')">
+      <div class="card-dot" style="background:${c.color}"></div>
+      <span class="card-btn-name">${c.name}</span>
+    </button>
+  `).join('');
+}
+
+function selectCard(id) {
+  selectedCard = id;
+  renderCardSelect();
+}
+
+function addTransaction() {
+  const amount = parseFloat(document.getElementById('amountInput').value);
+  const desc = document.getElementById('descInput').value.trim();
+  const date = document.getElementById('dateInput').value;
+
+  if (!amount || amount <= 0) { showToast('⚠️ 請輸入有效金額'); return; }
+  if (!date) { showToast('⚠️ 請選擇日期'); return; }
+
+  const txn = {
+    id: Date.now().toString(),
+    type: selectedType,
+    amount: amount,
+    desc: desc,
+    category: selectedType === 'expense' ? selectedCat : 'other',
+    card: selectedCard,
+    date: date,
+  };
+
+  const data = loadData();
+  data.push(txn);
+  saveData(data);
+
+  document.getElementById('addModal').classList.remove('show');
+  selectedDay = date;
+  renderOverview();
+  renderAllTxns();
+  showToast('✅ 已新增記錄');
+}
+
+// ============================================================
+// DATA MANAGEMENT
+// ============================================================
+function clearWeekData() {
+  if (!confirm('確認清除本週所有記錄？')) return;
+  const data = loadData().filter(t => !isInWeek(t.date, currentWeekOffset));
+  saveData(data);
+  renderOverview();
+  showToast('本週記錄已清除');
+}
+
+function clearAllData() {
+  if (!confirm('確認清除所有記錄？此操作不可復原。')) return;
+  saveData([]);
+  renderOverview();
+  showToast('所有記錄已清除');
+}
+
+function exportCSV() {
+  const data = loadData();
+  if (data.length === 0) { showToast('暫無數據可匯出'); return; }
+  const headers = ['日期','類型','金額','描述','類別','帳戶'];
+  const rows = data.map(t => [
+    t.date,
+    t.type === 'expense' ? '支出' : '收入',
+    t.amount,
+    t.desc,
+    getCatById(t.category).label,
+    getCardById(t.card).name
+  ]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `消費記錄_${formatDate(new Date())}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ CSV 已匯出');
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+// Add some demo data if empty
+function addDemoData() {
+  if (loadData().length > 0) return;
+  const today = new Date();
+  const fmt = d => d.toISOString().split('T')[0];
+  const d = (offset) => { const x = new Date(today); x.setDate(today.getDate()-offset); return fmt(x); };
+
+  const demos = [
+    { id:'d1', type:'expense', amount:85,    desc:'Foodpanda 外賣',    category:'food',            card:'mox_cc',    date:d(0) },
+    { id:'d2', type:'expense', amount:320,   desc:'超市買菜',          category:'grocery',         card:'mox_bank',  date:d(0) },
+    { id:'d3', type:'expense', amount:12.8,  desc:'港鐵（八達通增值）', category:'transport',       card:'mox_cc',    date:d(1) },
+    { id:'d4', type:'expense', amount:168,   desc:'貓糧（Kangaroo）',  category:'pet',             card:'mox_cc',    date:d(1) },
+    { id:'d5', type:'expense', amount:238,   desc:'淘寶購物',          category:'online_shopping', card:'amex',      date:d(2) },
+    { id:'d6', type:'expense', amount:88,    desc:'Apple Music 家庭版', category:'digital',        card:'mox_cc',    date:d(3) },
+    { id:'d7', type:'expense', amount:450,   desc:'餐廳晚飯',          category:'food',            card:'boc_master', date:d(3) },
+    { id:'d8', type:'income',  amount:52700, desc:'薪金',              category:'other',           card:'mox_bank',  date:d(4) },
+    { id:'d9', type:'expense', amount:6250,  desc:'租金（Dicky）',     category:'transfer',        card:'mox_bank',  date:d(5) },
+    { id:'d10',type:'expense', amount:1368,  desc:'政府讀書貸款',      category:'other',           card:'boc_visa',  date:d(6) },
+  ];
+  saveData(demos);
+}
+
+addDemoData();
+renderWeekLabel();
+renderOverview();
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>每週消費追蹤</title>
+<title>消費追蹤</title>
 <style>
   :root {
     --bg: #0f0f13;
@@ -11,593 +11,210 @@
     --surface2: #22222e;
     --border: #2e2e3e;
     --accent: #6c63ff;
-    --accent2: #ff6584;
-    --accent3: #43d9a2;
-    --accent4: #ffd166;
     --text: #e8e8f0;
     --text2: #9090a8;
     --text3: #5a5a70;
-    --mox: #00c9a7;
-    --boc: #4a90d9;
-    --amex: #c9a227;
     --danger: #ff4d6d;
     --warning: #ffd166;
     --safe: #43d9a2;
     --radius: 16px;
     --radius-sm: 10px;
   }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Noto Sans CJK TC', sans-serif;
-    min-height: 100vh;
-    max-width: 430px;
-    margin: 0 auto;
-    padding-bottom: 100px;
-  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Noto Sans CJK TC',sans-serif; min-height:100vh; max-width:430px; margin:0 auto; padding-bottom:100px; }
 
   /* Header */
-  .header {
-    padding: 20px 20px 0;
-    position: sticky;
-    top: 0;
-    background: var(--bg);
-    z-index: 100;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  .header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 4px;
-  }
-  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
-  .week-nav {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .week-nav button {
-    background: var(--surface2);
-    border: none;
-    color: var(--text);
-    width: 32px; height: 32px;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .week-label { font-size: 13px; color: var(--text2); font-weight: 500; }
+  .header { padding:16px 20px 10px; position:sticky; top:0; background:var(--bg); z-index:100; border-bottom:1px solid var(--border); }
+  .header-top { display:flex; justify-content:space-between; align-items:center; }
+  .header h1 { font-size:20px; font-weight:700; }
+  .month-nav { display:flex; align-items:center; gap:8px; }
+  .month-nav button { background:var(--surface2); border:none; color:var(--text); width:30px; height:30px; border-radius:8px; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .month-label { font-size:13px; color:var(--text2); font-weight:500; min-width:60px; text-align:center; }
 
   /* Tabs */
-  .tabs {
-    display: flex;
-    gap: 6px;
-    padding: 14px 20px 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tab {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text2);
-    padding: 7px 16px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.2s;
-  }
-  .tab.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
+  .tabs { display:flex; gap:6px; padding:12px 20px 0; overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { background:var(--surface); border:1px solid var(--border); color:var(--text2); padding:7px 14px; border-radius:20px; font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap; transition:all .2s; }
+  .tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
 
   /* Content */
-  .content { padding: 16px 20px; }
+  .content { padding:14px 20px; }
+  .page { display:none; }
+  .page.active { display:block; }
 
-  /* Budget Cards */
-  .section-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text3);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    margin-top: 20px;
-  }
-  .section-title:first-child { margin-top: 0; }
+  /* Section title */
+  .section-title { font-size:11px; font-weight:600; color:var(--text3); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; margin-top:18px; }
+  .section-title:first-child { margin-top:0; }
 
-  .budget-cards {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 6px;
-  }
-  .budget-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
-    position: relative;
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.15s, border-color 0.15s;
-  }
-  .budget-card:active { transform: scale(0.97); }
-  .budget-card.full-width { grid-column: 1 / -1; }
-  .budget-card .card-accent {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    border-radius: var(--radius) var(--radius) 0 0;
-  }
-  .budget-card .card-icon {
-    font-size: 20px;
-    margin-bottom: 8px;
-    display: block;
-  }
-  .budget-card .card-name {
-    font-size: 12px;
-    color: var(--text2);
-    font-weight: 500;
-    margin-bottom: 4px;
-  }
-  .budget-card .card-remaining {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    margin-bottom: 2px;
-  }
-  .budget-card .card-total {
-    font-size: 11px;
-    color: var(--text3);
-  }
-  .progress-bar {
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    margin-top: 10px;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.5s ease;
-  }
-  .budget-card.danger .card-remaining { color: var(--danger); }
-  .budget-card.warning .card-remaining { color: var(--warning); }
-  .budget-card.safe .card-remaining { color: var(--safe); }
+  /* Hero balance */
+  .balance-hero { background:linear-gradient(135deg,#1e1e2e,#2a1f3d); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; text-align:center; margin-bottom:10px; position:relative; overflow:hidden; }
+  .balance-hero::before { content:''; position:absolute; top:-30px; right:-30px; width:120px; height:120px; background:radial-gradient(circle,rgba(108,99,255,.15),transparent 70%); border-radius:50%; }
+  .balance-hero .bal-label { font-size:11px; color:var(--text3); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; }
+  .balance-hero .bal-amount { font-size:34px; font-weight:800; letter-spacing:-1px; }
+  .balance-hero .bal-sub { font-size:12px; color:var(--text2); margin-top:4px; }
 
-  /* Weekly Summary */
-  .summary-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 10px;
-  }
-  .summary-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .summary-row:last-child { border-bottom: none; padding-bottom: 0; }
-  .summary-row:first-child { padding-top: 0; }
-  .summary-label { font-size: 13px; color: var(--text2); }
-  .summary-value { font-size: 14px; font-weight: 600; }
-  .summary-value.income { color: var(--safe); }
-  .summary-value.expense { color: var(--danger); }
-  .summary-value.neutral { color: var(--text); }
+  /* MTD progress bar */
+  .mtd-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; }
+  .mtd-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+  .mtd-title { font-size:12px; color:var(--text2); font-weight:500; }
+  .mtd-amounts { font-size:12px; color:var(--text3); }
+  .mtd-amounts span { color:var(--text); font-weight:600; }
+  .mtd-track { height:8px; background:var(--border); border-radius:4px; overflow:hidden; position:relative; }
+  .mtd-fill { height:100%; border-radius:4px; transition:width .6s ease; }
+  .mtd-marker { position:absolute; top:-2px; width:2px; height:12px; background:var(--text3); border-radius:1px; }
+  .mtd-days { font-size:10px; color:var(--text3); margin-top:5px; text-align:right; }
 
-  /* Big Balance */
-  .balance-hero {
-    background: linear-gradient(135deg, #1e1e2e 0%, #2a1f3d 100%);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
-    text-align: center;
-    margin-bottom: 10px;
-    position: relative;
-    overflow: hidden;
-  }
-  .balance-hero::before {
-    content: '';
-    position: absolute;
-    top: -30px; right: -30px;
-    width: 120px; height: 120px;
-    background: radial-gradient(circle, rgba(108,99,255,0.15) 0%, transparent 70%);
-    border-radius: 50%;
-  }
-  .balance-hero .balance-label { font-size: 12px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
-  .balance-hero .balance-amount { font-size: 36px; font-weight: 800; letter-spacing: -1px; color: var(--text); }
-  .balance-hero .balance-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  /* Budget cards grid */
+  .budget-cards { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px; }
+  .budget-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:13px; position:relative; overflow:hidden; cursor:pointer; transition:transform .15s; }
+  .budget-card:active { transform:scale(.97); }
+  .budget-card .card-accent { position:absolute; top:0; left:0; right:0; height:3px; border-radius:var(--radius) var(--radius) 0 0; }
+  .budget-card .card-icon { font-size:18px; margin-bottom:6px; display:block; }
+  .budget-card .card-name { font-size:11px; color:var(--text2); font-weight:500; margin-bottom:3px; }
+  .budget-card .card-remaining { font-size:19px; font-weight:700; letter-spacing:-.5px; margin-bottom:1px; }
+  .budget-card .card-total { font-size:10px; color:var(--text3); }
+  .progress-bar { height:4px; background:var(--border); border-radius:2px; margin-top:8px; overflow:hidden; }
+  .progress-fill { height:100%; border-radius:2px; transition:width .5s ease; }
+  .budget-card.danger .card-remaining { color:var(--danger); }
+  .budget-card.warning .card-remaining { color:var(--warning); }
+  .budget-card.safe .card-remaining { color:var(--safe); }
 
-  /* Transaction List */
-  .txn-list { display: flex; flex-direction: column; gap: 8px; }
-  .txn-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px 14px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .txn-item:active { background: var(--surface2); }
-  .txn-icon {
-    width: 38px; height: 38px;
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
-  }
-  .txn-info { flex: 1; min-width: 0; }
-  .txn-desc { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .txn-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
-  .txn-amount { font-size: 15px; font-weight: 700; flex-shrink: 0; }
-  .txn-amount.expense { color: var(--danger); }
-  .txn-amount.income { color: var(--safe); }
-  .txn-delete {
-    width: 28px; height: 28px;
-    background: rgba(255,77,109,0.12);
-    border: none;
-    border-radius: 7px;
-    color: var(--danger);
-    font-size: 14px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  .txn-item:hover .txn-delete,
-  .txn-item.show-delete .txn-delete { opacity: 1; }
+  /* Day strip */
+  .week-strip { display:flex; gap:5px; margin-bottom:12px; }
+  .day-chip { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:7px 3px; text-align:center; cursor:pointer; transition:all .2s; }
+  .day-chip.active { background:var(--accent); border-color:var(--accent); }
+  .day-chip .day-name { font-size:9px; color:var(--text3); font-weight:600; }
+  .day-chip.active .day-name { color:rgba(255,255,255,.7); }
+  .day-chip .day-num { font-size:13px; font-weight:700; margin-top:2px; }
+  .day-chip .day-dot { width:4px; height:4px; background:var(--safe); border-radius:50%; margin:3px auto 0; }
+  .day-chip.active .day-dot { background:rgba(255,255,255,.6); }
+  .day-chip .day-dot.hidden { visibility:hidden; }
 
-  .empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--text3);
-  }
-  .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; }
-  .empty-state p { font-size: 14px; }
+  /* Transaction list */
+  .txn-list { display:flex; flex-direction:column; gap:7px; }
+  .txn-item { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:11px 13px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:background .15s; }
+  .txn-item:active { background:var(--surface2); }
+  .txn-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+  .txn-info { flex:1; min-width:0; }
+  .txn-desc { font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .txn-meta { font-size:10px; color:var(--text2); margin-top:2px; }
+  .txn-amount { font-size:14px; font-weight:700; flex-shrink:0; }
+  .txn-amount.expense { color:var(--danger); }
+  .txn-amount.income { color:var(--safe); }
+  .txn-delete { width:26px; height:26px; background:rgba(255,77,109,.12); border:none; border-radius:7px; color:var(--danger); font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; opacity:0; transition:opacity .2s; }
+  .txn-item.show-delete .txn-delete { opacity:1; }
+  .empty-state { text-align:center; padding:36px 20px; color:var(--text3); }
+  .empty-state .empty-icon { font-size:38px; margin-bottom:10px; }
+  .empty-state p { font-size:13px; }
 
-  /* Bottom Nav */
-  .bottom-nav {
-    position: fixed;
-    bottom: 0; left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: 430px;
-    background: rgba(15,15,19,0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid var(--border);
-    display: flex;
-    padding: 10px 0 20px;
-    z-index: 200;
-  }
-  .nav-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    cursor: pointer;
-    padding: 4px 0;
-    transition: opacity 0.2s;
-  }
-  .nav-item .nav-icon { font-size: 22px; }
-  .nav-item .nav-label { font-size: 10px; color: var(--text3); font-weight: 500; }
-  .nav-item.active .nav-label { color: var(--accent); }
-
-  /* FAB */
-  .fab {
-    position: fixed;
-    bottom: 80px;
-    right: 20px;
-    width: 56px; height: 56px;
-    background: var(--accent);
-    border: none;
-    border-radius: 16px;
-    color: #fff;
-    font-size: 26px;
-    cursor: pointer;
-    box-shadow: 0 8px 24px rgba(108,99,255,0.4);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 150;
-    transition: transform 0.15s, box-shadow 0.15s;
-  }
-  .fab:active { transform: scale(0.93); box-shadow: 0 4px 12px rgba(108,99,255,0.3); }
-
-  /* Modal */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 300;
-    display: flex;
-    align-items: flex-end;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s;
-  }
-  .modal-overlay.show { opacity: 1; pointer-events: all; }
-  .modal {
-    background: var(--surface);
-    border-radius: 24px 24px 0 0;
-    padding: 20px 20px 40px;
-    width: 100%;
-    max-width: 430px;
-    margin: 0 auto;
-    transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-  .modal-overlay.show .modal { transform: translateY(0); }
-  .modal-handle {
-    width: 36px; height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    margin: 0 auto 20px;
-  }
-  .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
-
-  /* Form */
-  .form-group { margin-bottom: 16px; }
-  .form-label { font-size: 12px; color: var(--text2); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; display: block; }
-  .form-input {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-size: 16px;
-    padding: 12px 14px;
-    outline: none;
-    transition: border-color 0.2s;
-    font-family: inherit;
-  }
-  .form-input:focus { border-color: var(--accent); }
-  .form-input::placeholder { color: var(--text3); }
-
-  .amount-input-wrap { position: relative; }
-  .amount-prefix {
-    position: absolute;
-    left: 14px; top: 50%;
-    transform: translateY(-50%);
-    color: var(--text2);
-    font-size: 16px;
-    font-weight: 600;
-  }
-  .amount-input-wrap .form-input { padding-left: 30px; }
-
-  .type-toggle {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .type-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text2);
-    padding: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
-  }
-  .type-btn.active-expense { background: rgba(255,77,109,0.15); border-color: var(--danger); color: var(--danger); }
-  .type-btn.active-income { background: rgba(67,217,162,0.15); border-color: var(--safe); color: var(--safe); }
-
-  .cat-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  .cat-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 10px 4px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
-  }
-  .cat-btn .cat-emoji { font-size: 20px; }
-  .cat-btn .cat-label { font-size: 10px; color: var(--text2); }
-  .cat-btn.active { border-color: var(--accent); background: rgba(108,99,255,0.15); }
-  .cat-btn.active .cat-label { color: var(--accent); }
-
-  .card-select {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-  .card-btn {
-    background: var(--surface2);
-    border: 2px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
-  }
-  .card-btn .card-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .card-btn .card-btn-name { font-size: 12px; color: var(--text2); font-weight: 500; }
-  .card-btn.active { border-color: var(--accent); background: rgba(108,99,255,0.12); }
-  .card-btn.active .card-btn-name { color: var(--text); }
-
-  .btn-submit {
-    width: 100%;
-    background: var(--accent);
-    border: none;
-    border-radius: var(--radius-sm);
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
-    padding: 14px;
-    cursor: pointer;
-    margin-top: 8px;
-    font-family: inherit;
-    transition: opacity 0.2s;
-  }
-  .btn-submit:active { opacity: 0.85; }
-
-  /* Budget Settings */
-  .budget-setting-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 14px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .budget-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-  .budget-setting-info { flex: 1; }
-  .budget-setting-name { font-size: 14px; font-weight: 500; }
-  .budget-setting-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
-  .budget-setting-input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-size: 15px;
-    font-weight: 600;
-    padding: 8px 10px;
-    width: 90px;
-    text-align: right;
-    outline: none;
-    font-family: inherit;
-  }
-  .budget-setting-input:focus { border-color: var(--accent); }
+  /* Summary card */
+  .summary-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px; margin-bottom:10px; }
+  .summary-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); }
+  .summary-row:last-child { border-bottom:none; padding-bottom:0; }
+  .summary-row:first-child { padding-top:0; }
+  .summary-label { font-size:13px; color:var(--text2); }
+  .summary-value { font-size:14px; font-weight:600; }
+  .summary-value.income { color:var(--safe); }
+  .summary-value.expense { color:var(--danger); }
+  .summary-value.neutral { color:var(--text); }
 
   /* Charts */
-  .chart-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 10px;
-  }
-  .chart-title { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 14px; }
-  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
-  .bar-row { display: flex; align-items: center; gap: 10px; }
-  .bar-row-label { font-size: 12px; color: var(--text2); width: 60px; flex-shrink: 0; text-align: right; }
-  .bar-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
-  .bar-row-val { font-size: 12px; font-weight: 600; width: 52px; text-align: right; flex-shrink: 0; }
+  .chart-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px; margin-bottom:10px; }
+  .chart-title { font-size:12px; font-weight:600; color:var(--text2); margin-bottom:12px; }
+  .bar-chart { display:flex; flex-direction:column; gap:9px; }
+  .bar-row { display:flex; align-items:center; gap:8px; }
+  .bar-row-label { font-size:11px; color:var(--text2); width:64px; flex-shrink:0; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bar-track { flex:1; height:7px; background:var(--border); border-radius:4px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:4px; transition:width .6s ease; }
+  .bar-row-val { font-size:11px; font-weight:600; width:54px; text-align:right; flex-shrink:0; }
+  .donut-wrap { display:flex; align-items:center; gap:14px; }
+  .donut-legend { flex:1; display:flex; flex-direction:column; gap:7px; }
+  .legend-item { display:flex; align-items:center; gap:7px; }
+  .legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .legend-name { font-size:11px; color:var(--text2); flex:1; }
+  .legend-pct { font-size:11px; font-weight:600; }
 
-  .donut-wrap { display: flex; align-items: center; gap: 16px; }
-  .donut-legend { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-  .legend-item { display: flex; align-items: center; gap: 8px; }
-  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .legend-name { font-size: 12px; color: var(--text2); flex: 1; }
-  .legend-pct { font-size: 12px; font-weight: 600; }
+  /* Bottom Nav */
+  .bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; background:rgba(15,15,19,.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-top:1px solid var(--border); display:flex; padding:10px 0 20px; z-index:200; }
+  .nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:4px 0; }
+  .nav-item .nav-icon { font-size:21px; }
+  .nav-item .nav-label { font-size:10px; color:var(--text3); font-weight:500; }
+  .nav-item.active .nav-label { color:var(--accent); }
+
+  /* FAB */
+  .fab { position:fixed; bottom:80px; right:20px; width:54px; height:54px; background:var(--accent); border:none; border-radius:16px; color:#fff; font-size:26px; cursor:pointer; box-shadow:0 8px 24px rgba(108,99,255,.4); display:flex; align-items:center; justify-content:center; z-index:150; transition:transform .15s; }
+  .fab:active { transform:scale(.93); }
+
+  /* Modal */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:300; display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity .25s; }
+  .modal-overlay.show { opacity:1; pointer-events:all; }
+  .modal { background:var(--surface); border-radius:24px 24px 0 0; padding:18px 20px 40px; width:100%; max-width:430px; margin:0 auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1); max-height:92vh; overflow-y:auto; }
+  .modal-overlay.show .modal { transform:translateY(0); }
+  .modal-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 18px; }
+  .modal h2 { font-size:17px; font-weight:700; margin-bottom:18px; }
+
+  /* Form */
+  .form-group { margin-bottom:14px; }
+  .form-label { font-size:11px; color:var(--text2); font-weight:600; letter-spacing:.5px; text-transform:uppercase; margin-bottom:7px; display:block; }
+  .form-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:16px; padding:11px 13px; outline:none; transition:border-color .2s; font-family:inherit; }
+  .form-input:focus { border-color:var(--accent); }
+  .form-input::placeholder { color:var(--text3); }
+  .amount-input-wrap { position:relative; }
+  .amount-prefix { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--text2); font-size:16px; font-weight:600; }
+  .amount-input-wrap .form-input { padding-left:28px; }
+
+  .type-toggle { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .type-btn { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text2); padding:10px; font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; font-family:inherit; }
+  .type-btn.active-expense { background:rgba(255,77,109,.15); border-color:var(--danger); color:var(--danger); }
+  .type-btn.active-income { background:rgba(67,217,162,.15); border-color:var(--safe); color:var(--safe); }
+
+  .cat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
+  .cat-btn { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:9px 3px; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; transition:all .2s; font-family:inherit; position:relative; }
+  .cat-btn .cat-emoji { font-size:19px; }
+  .cat-btn .cat-label { font-size:9px; color:var(--text2); text-align:center; line-height:1.2; }
+  .cat-btn.active { border-color:var(--accent); background:rgba(108,99,255,.15); }
+  .cat-btn.active .cat-label { color:var(--accent); }
+
+  .card-select { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; }
+  .card-btn { background:var(--surface2); border:2px solid var(--border); border-radius:var(--radius-sm); padding:9px; display:flex; align-items:center; gap:7px; cursor:pointer; transition:all .2s; font-family:inherit; }
+  .card-btn .card-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .card-btn .card-btn-name { font-size:12px; color:var(--text2); font-weight:500; }
+  .card-btn.active { border-color:var(--accent); background:rgba(108,99,255,.12); }
+  .card-btn.active .card-btn-name { color:var(--text); }
+
+  .btn-submit { width:100%; background:var(--accent); border:none; border-radius:var(--radius-sm); color:#fff; font-size:15px; font-weight:700; padding:13px; cursor:pointer; margin-top:6px; font-family:inherit; transition:opacity .2s; }
+  .btn-submit:active { opacity:.85; }
+  .btn-secondary { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:14px; font-weight:600; padding:11px; cursor:pointer; margin-top:8px; font-family:inherit; }
+
+  /* Settings */
+  .budget-setting-item { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:13px; margin-bottom:7px; display:flex; align-items:center; gap:10px; }
+  .budget-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+  .budget-setting-info { flex:1; }
+  .budget-setting-name { font-size:13px; font-weight:500; }
+  .budget-setting-sub { font-size:10px; color:var(--text2); margin-top:2px; }
+  .budget-setting-input { background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; font-weight:600; padding:7px 9px; width:88px; text-align:right; outline:none; font-family:inherit; }
+  .budget-setting-input:focus { border-color:var(--accent); }
+
+  /* Category Manager */
+  .cat-manage-item { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:11px 13px; margin-bottom:6px; display:flex; align-items:center; gap:10px; }
+  .cat-manage-emoji { font-size:20px; width:32px; text-align:center; flex-shrink:0; }
+  .cat-manage-info { flex:1; }
+  .cat-manage-name { font-size:13px; font-weight:500; }
+  .cat-manage-type { font-size:10px; color:var(--text2); margin-top:1px; }
+  .cat-manage-del { width:28px; height:28px; background:rgba(255,77,109,.1); border:1px solid rgba(255,77,109,.3); border-radius:7px; color:var(--danger); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:inherit; }
+  .cat-manage-del:disabled { opacity:.3; cursor:not-allowed; }
+
+  /* Emoji picker */
+  .emoji-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:4px; max-height:160px; overflow-y:auto; }
+  .emoji-opt { font-size:22px; text-align:center; padding:4px; border-radius:6px; cursor:pointer; border:2px solid transparent; transition:border-color .15s; }
+  .emoji-opt.selected { border-color:var(--accent); background:rgba(108,99,255,.15); }
+  .emoji-opt:active { background:var(--surface2); }
 
   /* Toast */
-  .toast {
-    position: fixed;
-    bottom: 100px;
-    left: 50%; transform: translateX(-50%);
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 10px 20px;
-    font-size: 13px;
-    font-weight: 500;
-    z-index: 400;
-    opacity: 0;
-    transition: opacity 0.3s, bottom 0.3s;
-    white-space: nowrap;
-    pointer-events: none;
-  }
-  .toast.show { opacity: 1; bottom: 110px; }
+  .toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:9px 18px; font-size:13px; font-weight:500; z-index:400; opacity:0; transition:opacity .3s,bottom .3s; white-space:nowrap; pointer-events:none; }
+  .toast.show { opacity:1; bottom:110px; }
 
-  /* Page views */
-  .page { display: none; }
-  .page.active { display: block; }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 0; }
-
-  /* Week days strip */
-  .week-strip {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 14px;
-  }
-  .day-chip {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 8px 4px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .day-chip.active { background: var(--accent); border-color: var(--accent); }
-  .day-chip .day-name { font-size: 10px; color: var(--text3); font-weight: 600; }
-  .day-chip.active .day-name { color: rgba(255,255,255,0.7); }
-  .day-chip .day-num { font-size: 14px; font-weight: 700; margin-top: 2px; }
-  .day-chip .day-dot { width: 4px; height: 4px; background: var(--accent3); border-radius: 50%; margin: 3px auto 0; }
-  .day-chip.active .day-dot { background: rgba(255,255,255,0.6); }
-  .day-chip .day-dot.hidden { visibility: hidden; }
-
-  .month-budget-bar {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-    margin-bottom: 10px;
-  }
-  .month-bar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 10px;
-  }
-  .month-bar-title { font-size: 13px; color: var(--text2); font-weight: 500; }
-  .month-bar-amounts { font-size: 12px; color: var(--text3); }
-  .month-bar-amounts span { color: var(--text); font-weight: 600; }
-  .month-progress { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; position: relative; }
-  .month-progress-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
-  .month-progress-marker {
-    position: absolute;
-    top: -2px;
-    width: 2px;
-    height: 12px;
-    background: var(--text3);
-    border-radius: 1px;
-  }
+  ::-webkit-scrollbar { width:0; }
 </style>
 </head>
 <body>
@@ -606,10 +223,10 @@
 <div class="header">
   <div class="header-top">
     <h1>💳 消費追蹤</h1>
-    <div class="week-nav">
-      <button onclick="changeWeek(-1)">‹</button>
-      <span class="week-label" id="weekLabel">本週</span>
-      <button onclick="changeWeek(1)">›</button>
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">‹</button>
+      <span class="month-label" id="monthLabel">本月</span>
+      <button onclick="changeMonth(1)">›</button>
     </div>
   </div>
 </div>
@@ -619,49 +236,47 @@
   <div class="tab active" onclick="switchTab('overview')">總覽</div>
   <div class="tab" onclick="switchTab('transactions')">記帳</div>
   <div class="tab" onclick="switchTab('analysis')">分析</div>
-  <div class="tab" onclick="switchTab('settings')">預算設定</div>
+  <div class="tab" onclick="switchTab('settings')">設定</div>
 </div>
 
-<!-- Overview Page -->
+<!-- ══ OVERVIEW ══ -->
 <div class="content page active" id="page-overview">
-
-  <!-- Balance Hero -->
   <div class="balance-hero">
-    <div class="balance-label">本週可用餘額</div>
-    <div class="balance-amount" id="heroBalance">$0</div>
-    <div class="balance-sub" id="heroSub">已用 $0 / 週預算 $0</div>
+    <div class="bal-label">本月剩餘預算</div>
+    <div class="bal-amount" id="heroBalance">$0</div>
+    <div class="bal-sub" id="heroSub">已用 $0 / 月預算 $0</div>
   </div>
 
-  <!-- Month progress -->
-  <div class="month-budget-bar">
-    <div class="month-bar-header">
-      <span class="month-bar-title">本月進度</span>
-      <span class="month-bar-amounts">已用 <span id="monthUsed">$0</span> / <span id="monthBudget">$0</span></span>
+  <div class="mtd-card">
+    <div class="mtd-header">
+      <span class="mtd-title">月度進度 (MTD)</span>
+      <span class="mtd-amounts">已用 <span id="mtdUsed">$0</span> / <span id="mtdBudget">$0</span></span>
     </div>
-    <div class="month-progress">
-      <div class="month-progress-fill" id="monthProgressFill" style="width:0%;background:var(--safe)"></div>
-      <div class="month-progress-marker" id="monthDayMarker" style="left:50%"></div>
+    <div class="mtd-track">
+      <div class="mtd-fill" id="mtdFill" style="width:0%;background:var(--safe)"></div>
+      <div class="mtd-marker" id="mtdDayMarker" style="left:50%"></div>
     </div>
+    <div class="mtd-days" id="mtdDays"></div>
   </div>
 
-  <div class="section-title">各帳戶剩餘預算</div>
+  <div class="section-title">各帳戶月度剩餘</div>
   <div class="budget-cards" id="budgetCards"></div>
 
-  <div class="section-title">今日支出</div>
+  <div class="section-title">每日記錄</div>
   <div class="week-strip" id="weekStrip"></div>
   <div class="txn-list" id="todayTxns"></div>
-
 </div>
 
-<!-- Transactions Page -->
+<!-- ══ TRANSACTIONS ══ -->
 <div class="content page" id="page-transactions">
-  <div class="section-title" style="margin-top:4px">所有記錄</div>
+  <div class="section-title" style="margin-top:4px">本月所有記錄</div>
+  <div id="txnMonthSummary" class="summary-card" style="margin-bottom:10px"></div>
   <div class="txn-list" id="allTxns"></div>
 </div>
 
-<!-- Analysis Page -->
+<!-- ══ ANALYSIS ══ -->
 <div class="content page" id="page-analysis">
-  <div class="section-title" style="margin-top:4px">本週支出分類</div>
+  <div class="section-title" style="margin-top:4px">本月支出分類</div>
   <div class="chart-wrap">
     <div class="chart-title">分類佔比</div>
     <div class="donut-wrap">
@@ -669,51 +284,51 @@
       <div class="donut-legend" id="donutLegend"></div>
     </div>
   </div>
-
   <div class="section-title">各帳戶使用率</div>
   <div class="chart-wrap">
-    <div class="chart-title">預算使用率</div>
+    <div class="chart-title">月度預算使用率</div>
     <div class="bar-chart" id="usageBarChart"></div>
   </div>
-
   <div class="section-title">每日支出趨勢</div>
   <div class="chart-wrap">
-    <div class="chart-title">本週每日支出</div>
+    <div class="chart-title">本月每日支出</div>
     <canvas id="lineChart" width="340" height="160" style="width:100%;height:auto"></canvas>
   </div>
 </div>
 
-<!-- Settings Page -->
+<!-- ══ SETTINGS ══ -->
 <div class="content page" id="page-settings">
+
   <div class="section-title" style="margin-top:4px">月度預算設定</div>
   <div id="budgetSettingsList"></div>
-  <button class="btn-submit" onclick="saveBudgets()" style="margin-top:8px">儲存設定</button>
+  <button class="btn-submit" onclick="saveBudgets()">儲存預算</button>
+
+  <div class="section-title">類別管理</div>
+  <div class="summary-card" style="margin-bottom:8px">
+    <div class="summary-row" style="border-bottom:none;padding:0">
+      <span class="summary-label" style="font-size:12px;color:var(--text3)">可新增自訂類別（支出或收入），長按已有類別可刪除自訂類別。</span>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    <button class="btn-submit" style="margin-top:0;background:var(--danger)" onclick="openAddCatModal('expense')">＋ 新增支出類別</button>
+    <button class="btn-submit" style="margin-top:0;background:var(--safe);color:#111" onclick="openAddCatModal('income')">＋ 新增收入類別</button>
+  </div>
+
+  <div class="section-title">支出類別</div>
+  <div id="expenseCatList"></div>
+  <div class="section-title">收入類別</div>
+  <div id="incomeCatList"></div>
 
   <div class="section-title">資料管理</div>
   <div class="summary-card">
     <div class="summary-row">
-      <span class="summary-label">清除本週記錄</span>
-      <button onclick="clearWeekData()" style="background:rgba(255,77,109,0.12);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit;">清除</button>
-    </div>
-    <div class="summary-row">
-      <span class="summary-label">清除所有記錄</span>
-      <button onclick="clearAllData()" style="background:rgba(255,77,109,0.12);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit;">清除</button>
-    </div>
-    <div class="summary-row" style="border-bottom:none">
       <span class="summary-label">匯出 CSV</span>
-      <button onclick="exportCSV()" style="background:rgba(108,99,255,0.12);border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit;">匯出</button>
-    </div>
-  </div>
-
-  <div class="section-title">關於</div>
-  <div class="summary-card">
-    <div class="summary-row">
-      <span class="summary-label">版本</span>
-      <span class="summary-value neutral">v1.0</span>
+      <button onclick="exportCSV()" style="background:rgba(108,99,255,.12);border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:6px 13px;font-size:12px;cursor:pointer;font-family:inherit;">匯出</button>
     </div>
     <div class="summary-row" style="border-bottom:none">
-      <span class="summary-label">數據儲存</span>
-      <span class="summary-value neutral">本機 (localStorage)</span>
+      <span class="summary-label">清除所有記錄</span>
+      <button onclick="clearAllData()" style="background:rgba(255,77,109,.12);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:6px 13px;font-size:12px;cursor:pointer;font-family:inherit;">清除</button>
     </div>
   </div>
 </div>
@@ -723,30 +338,17 @@
 
 <!-- Bottom Nav -->
 <div class="bottom-nav">
-  <div class="nav-item active" id="nav-overview" onclick="switchTab('overview')">
-    <span class="nav-icon">🏠</span>
-    <span class="nav-label">總覽</span>
-  </div>
-  <div class="nav-item" id="nav-transactions" onclick="switchTab('transactions')">
-    <span class="nav-icon">📋</span>
-    <span class="nav-label">記帳</span>
-  </div>
-  <div class="nav-item" id="nav-analysis" onclick="switchTab('analysis')">
-    <span class="nav-icon">📊</span>
-    <span class="nav-label">分析</span>
-  </div>
-  <div class="nav-item" id="nav-settings" onclick="switchTab('settings')">
-    <span class="nav-icon">⚙️</span>
-    <span class="nav-label">設定</span>
-  </div>
+  <div class="nav-item active" id="nav-overview" onclick="switchTab('overview')"><span class="nav-icon">🏠</span><span class="nav-label">總覽</span></div>
+  <div class="nav-item" id="nav-transactions" onclick="switchTab('transactions')"><span class="nav-icon">📋</span><span class="nav-label">記帳</span></div>
+  <div class="nav-item" id="nav-analysis" onclick="switchTab('analysis')"><span class="nav-icon">📊</span><span class="nav-label">分析</span></div>
+  <div class="nav-item" id="nav-settings" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span><span class="nav-label">設定</span></div>
 </div>
 
 <!-- Add Transaction Modal -->
-<div class="modal-overlay" id="addModal" onclick="handleModalClick(event)">
+<div class="modal-overlay" id="addModal" onclick="handleModalBg(event,'addModal')">
   <div class="modal">
     <div class="modal-handle"></div>
     <h2>新增記錄</h2>
-
     <div class="form-group">
       <label class="form-label">類型</label>
       <div class="type-toggle">
@@ -754,7 +356,6 @@
         <button class="type-btn" id="typeIncome" onclick="setType('income')">💰 收入</button>
       </div>
     </div>
-
     <div class="form-group">
       <label class="form-label">金額 (HKD)</label>
       <div class="amount-input-wrap">
@@ -762,28 +363,45 @@
         <input class="form-input" type="number" id="amountInput" placeholder="0.00" inputmode="decimal" step="0.01">
       </div>
     </div>
-
     <div class="form-group">
       <label class="form-label">描述</label>
       <input class="form-input" type="text" id="descInput" placeholder="例：超市買菜、外賣">
     </div>
-
-    <div class="form-group" id="catGroup">
+    <div class="form-group">
       <label class="form-label">類別</label>
       <div class="cat-grid" id="catGrid"></div>
     </div>
-
-    <div class="form-group" id="cardGroup">
+    <div class="form-group">
       <label class="form-label">帳戶 / 信用卡</label>
       <div class="card-select" id="cardSelect"></div>
     </div>
-
     <div class="form-group">
       <label class="form-label">日期</label>
       <input class="form-input" type="date" id="dateInput">
     </div>
-
     <button class="btn-submit" onclick="addTransaction()">確認新增</button>
+  </div>
+</div>
+
+<!-- Add Category Modal -->
+<div class="modal-overlay" id="addCatModal" onclick="handleModalBg(event,'addCatModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="addCatTitle">新增支出類別</h2>
+    <div class="form-group">
+      <label class="form-label">類別名稱</label>
+      <input class="form-input" type="text" id="newCatName" placeholder="例：住屋水電、薪金">
+    </div>
+    <div class="form-group">
+      <label class="form-label">選擇圖示</label>
+      <div class="emoji-grid" id="emojiGrid"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">顏色</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="colorGrid"></div>
+    </div>
+    <button class="btn-submit" onclick="saveNewCategory()">新增類別</button>
+    <button class="btn-secondary" onclick="closeModal('addCatModal')">取消</button>
   </div>
 </div>
 
@@ -791,268 +409,260 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ============================================================
-// DATA & CONFIG
-// ============================================================
+// ══════════════════════════════════════════════
+// DEFAULT DATA
+// ══════════════════════════════════════════════
+const DEFAULT_EXPENSE_CATS = [
+  { id:'online_shopping', label:'網購',     emoji:'🛍️', color:'#6c63ff', custom:false },
+  { id:'instalment',      label:'分期付款', emoji:'💳', color:'#fd79a8', custom:false },
+  { id:'dept_store',      label:'百貨購物', emoji:'🏬', color:'#e17055', custom:false },
+  { id:'food',            label:'餐飲',     emoji:'🍜', color:'#ff6584', custom:false },
+  { id:'fashion',         label:'衣服時裝', emoji:'👗', color:'#fd79a8', custom:false },
+  { id:'pet',             label:'寵物',     emoji:'🐱', color:'#ffd166', custom:false },
+  { id:'health',          label:'醫療健康', emoji:'💊', color:'#ff9f43', custom:false },
+  { id:'education',       label:'教育進修', emoji:'📚', color:'#00b894', custom:false },
+  { id:'transport',       label:'交通',     emoji:'🚇', color:'#4a90d9', custom:false },
+  { id:'digital',         label:'數碼訂閱', emoji:'📱', color:'#c9a227', custom:false },
+  { id:'grocery',         label:'超市日用', emoji:'🛒', color:'#43d9a2', custom:false },
+  { id:'utilities',       label:'住屋水電', emoji:'🏠', color:'#00cec9', custom:false },
+  { id:'travel',          label:'旅遊',     emoji:'✈️', color:'#0984e3', custom:false },
+  { id:'entertainment',   label:'娛樂文化', emoji:'🎬', color:'#a29bfe', custom:false },
+  { id:'tax',             label:'稅務',     emoji:'🏛️', color:'#e84393', custom:false },
+  { id:'transfer',        label:'個人轉帳', emoji:'🔄', color:'#636e72', custom:false },
+  { id:'other_exp',       label:'其他支出', emoji:'📌', color:'#b2bec3', custom:false },
+];
+
+const DEFAULT_INCOME_CATS = [
+  { id:'salary',      label:'薪金',     emoji:'💼', color:'#43d9a2', custom:false },
+  { id:'bonus',       label:'花紅',     emoji:'🎁', color:'#ffd166', custom:false },
+  { id:'interest',    label:'利息',     emoji:'🏦', color:'#00b894', custom:false },
+  { id:'refund',      label:'退款',     emoji:'↩️', color:'#74b9ff', custom:false },
+  { id:'other_inc',   label:'其他收入', emoji:'💰', color:'#a29bfe', custom:false },
+];
+
 const CARDS = [
-  { id: 'mox_bank',  name: 'MOX 儲蓄',   color: '#00c9a7', emoji: '🟢', defaultBudget: 15000 },
-  { id: 'mox_cc',    name: 'MOX Credit', color: '#00a896', emoji: '💳', defaultBudget: 5000  },
-  { id: 'boc_master',name: 'BOC Master', color: '#4a90d9', emoji: '🔵', defaultBudget: 4000  },
-  { id: 'boc_visa',  name: 'BOC Visa',   color: '#2e6db4', emoji: '🔷', defaultBudget: 3000  },
-  { id: 'amex',      name: 'AMEX',       color: '#c9a227', emoji: '🟡', defaultBudget: 4000  },
-  { id: 'cash',      name: '現金',       color: '#9090a8', emoji: '💵', defaultBudget: 4000  },
+  { id:'mox_bank',   name:'MOX 儲蓄',   color:'#00c9a7', emoji:'🟢', defaultBudget:15000 },
+  { id:'mox_cc',     name:'MOX Credit', color:'#00a896', emoji:'💳', defaultBudget:5000  },
+  { id:'boc_master', name:'BOC Master', color:'#4a90d9', emoji:'🔵', defaultBudget:4000  },
+  { id:'boc_visa',   name:'BOC Visa',   color:'#2e6db4', emoji:'🔷', defaultBudget:3000  },
+  { id:'amex',       name:'AMEX',       color:'#c9a227', emoji:'🟡', defaultBudget:4000  },
+  { id:'cash',       name:'現金',       color:'#9090a8', emoji:'💵', defaultBudget:4000  },
 ];
 
-const CATEGORIES = [
-  // ── 對應月結單分析的 15 個主類別 ──
-  { id: 'online_shopping', label: '網購',     emoji: '🛍️', color: '#6c63ff' },  // 淘寶/AlipayHK/iHerb
-  { id: 'instalment',      label: '分期付款', emoji: '💳', color: '#fd79a8' },  // BOC 信用卡分期
-  { id: 'dept_store',      label: '百貨購物', emoji: '🏬', color: '#e17055' },  // 裕華國貨/誠品
-  { id: 'food',            label: '餐飲',     emoji: '🍜', color: '#ff6584' },  // Foodpanda/餐廳
-  { id: 'fashion',         label: '衣服時裝', emoji: '👗', color: '#fd79a8' },  // Lavenham/Facesss
-  { id: 'pet',             label: '寵物',     emoji: '🐱', color: '#ffd166' },  // 貓糧/獸醫
-  { id: 'health',          label: '醫療健康', emoji: '💊', color: '#ff9f43' },  // 眼科/診所
-  { id: 'education',       label: '教育進修', emoji: '📚', color: '#00b894' },  // HKU SPACE
-  { id: 'transport',       label: '交通',     emoji: '🚇', color: '#4a90d9' },  // 八達通/Uber
-  { id: 'digital',         label: '數碼訂閱', emoji: '📱', color: '#c9a227' },  // Apple/Google
-  { id: 'grocery',         label: '超市日用', emoji: '🛒', color: '#43d9a2' },  // 超市/日用品
-  { id: 'travel',          label: '旅遊',     emoji: '✈️', color: '#00cec9' },  // Trip.com/機票
-  { id: 'entertainment',   label: '娛樂文化', emoji: '🎬', color: '#a29bfe' },  // 電影/Pop Mart
-  { id: 'tax',             label: '稅務',     emoji: '🏛️', color: '#e84393' },  // 薪俸稅
-  { id: 'transfer',        label: '個人轉帳', emoji: '🔄', color: '#636e72' },  // 租金/家人
-  { id: 'other',           label: '其他',     emoji: '📌', color: '#b2bec3' },  // 雜項
+const EMOJI_LIST = ['🏠','💡','🚿','🔌','🌊','🔥','📡','🛁','🪟','🚪','🧹','🧺',
+  '🍜','🍱','🥘','🍔','☕','🍰','🥗','🍣','🍕','🥩','🛒','🧃',
+  '🚇','🚌','🚗','✈️','🚢','🏍️','🚲','🛵',
+  '💊','🏥','👓','🦷','💉','🩺','🧬','🏋️',
+  '📚','🎓','✏️','📝','🖥️','📖','🔬','🎯',
+  '🎬','🎮','🎵','🎭','🎨','📷','🎪','🏆',
+  '👗','👟','👜','💍','🕶️','🧥','👒','💄',
+  '🐱','🐶','🐠','🐰','🦜','🐾','🏡','🌿',
+  '💼','💰','💵','🏦','📈','💳','🎁','🔄',
+  '🛍️','🏬','🛋️','🖼️','🧸','🎀','🧧','🎊',
+  '📌','📎','🔧','⚙️','🗂️','📦','🗃️','🔑',
+  '🌏','🗺️','🏖️','⛺','🎡','🎢','🎠','🏕️'];
+
+const COLOR_PALETTE = [
+  '#6c63ff','#ff6584','#43d9a2','#ffd166','#4a90d9','#ff9f43',
+  '#a29bfe','#fd79a8','#00cec9','#e17055','#00b894','#c9a227',
+  '#e84393','#636e72','#0984e3','#b2bec3','#d63031','#74b9ff',
 ];
 
-// State
-let currentWeekOffset = 0;
+// ══════════════════════════════════════════════
+// STATE & STORAGE
+// ══════════════════════════════════════════════
+let currentMonthOffset = 0;
 let selectedType = 'expense';
-let selectedCat = 'food';
-let selectedCard = 'mox_cc';
-let currentDay = new Date().getDay(); // 0=Sun
+let selectedCatId = 'food';
+let selectedCardId = 'mox_cc';
+let selectedDay = formatDate(new Date());
+let newCatType = 'expense';
+let selectedEmoji = '📌';
+let selectedColor = '#6c63ff';
 
-// Load from localStorage
-function loadData() {
-  return JSON.parse(localStorage.getItem('budget_txns') || '[]');
-}
-function saveData(data) {
-  localStorage.setItem('budget_txns', JSON.stringify(data));
-}
+function loadData() { return JSON.parse(localStorage.getItem('bt_txns') || '[]'); }
+function saveData(d) { localStorage.setItem('bt_txns', JSON.stringify(d)); }
 function loadBudgets() {
-  const saved = JSON.parse(localStorage.getItem('budget_settings') || '{}');
-  const result = {};
-  CARDS.forEach(c => {
-    result[c.id] = saved[c.id] !== undefined ? saved[c.id] : c.defaultBudget;
-  });
-  return result;
+  const saved = JSON.parse(localStorage.getItem('bt_budgets') || '{}');
+  const r = {};
+  CARDS.forEach(c => { r[c.id] = saved[c.id] !== undefined ? saved[c.id] : c.defaultBudget; });
+  return r;
 }
-function saveBudgetData(data) {
-  localStorage.setItem('budget_settings', JSON.stringify(data));
-}
+function saveBudgetData(d) { localStorage.setItem('bt_budgets', JSON.stringify(d)); }
 
-// ============================================================
-// WEEK UTILS
-// ============================================================
-function getWeekRange(offset = 0) {
+function loadExpenseCats() {
+  const custom = JSON.parse(localStorage.getItem('bt_exp_cats') || '[]');
+  return [...DEFAULT_EXPENSE_CATS, ...custom];
+}
+function loadIncomeCats() {
+  const custom = JSON.parse(localStorage.getItem('bt_inc_cats') || '[]');
+  return [...DEFAULT_INCOME_CATS, ...custom];
+}
+function saveCustomExpenseCats(cats) { localStorage.setItem('bt_exp_cats', JSON.stringify(cats.filter(c=>c.custom))); }
+function saveCustomIncomeCats(cats) { localStorage.setItem('bt_inc_cats', JSON.stringify(cats.filter(c=>c.custom))); }
+
+function getCatById(id) {
+  return [...loadExpenseCats(), ...loadIncomeCats()].find(c => c.id === id)
+    || { id:'other_exp', label:'其他', emoji:'📌', color:'#b2bec3' };
+}
+function getCardById(id) { return CARDS.find(c => c.id === id) || CARDS[0]; }
+
+// ══════════════════════════════════════════════
+// DATE UTILS
+// ══════════════════════════════════════════════
+function formatDate(d) { return d.toISOString().split('T')[0]; }
+
+function getMonthRange(offset = 0) {
   const now = new Date();
-  const day = now.getDay(); // 0=Sun
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
-  monday.setHours(0, 0, 0, 0);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
-  return { start: monday, end: sunday };
+  const y = now.getFullYear();
+  const m = now.getMonth() + offset;
+  const start = new Date(y, m, 1);
+  const end = new Date(y, m + 1, 0, 23, 59, 59, 999);
+  return { start, end, year: start.getFullYear(), month: start.getMonth() };
 }
 
-function formatDate(d) {
-  return d.toISOString().split('T')[0];
+function isInMonth(dateStr, offset = 0) {
+  const { start, end } = getMonthRange(offset);
+  const d = new Date(dateStr);
+  return d >= start && d <= end;
 }
 
-function getWeekDates(offset = 0) {
-  const { start } = getWeekRange(offset);
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
+function getMonthDates(offset = 0) {
+  const { start, year, month } = getMonthRange(offset);
+  const days = new Date(year, month + 1, 0).getDate();
+  return Array.from({ length: days }, (_, i) => {
+    const d = new Date(year, month, i + 1);
     return d;
   });
 }
 
-function isInWeek(dateStr, offset = 0) {
-  const { start, end } = getWeekRange(offset);
-  const d = new Date(dateStr);
-  return d >= start && d <= end;
+function updateMonthLabel() {
+  const lbl = document.getElementById('monthLabel');
+  if (currentMonthOffset === 0) { lbl.textContent = '本月'; return; }
+  if (currentMonthOffset === -1) { lbl.textContent = '上月'; return; }
+  const { start } = getMonthRange(currentMonthOffset);
+  lbl.textContent = `${start.getFullYear()}/${start.getMonth()+1}`;
 }
 
-function getMonthRange() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-  return { start, end };
-}
-
-function isInMonth(dateStr) {
-  const { start, end } = getMonthRange();
-  const d = new Date(dateStr);
-  return d >= start && d <= end;
-}
-
-// ============================================================
-// RENDER
-// ============================================================
-function switchTab(tab) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-
-  document.getElementById('page-' + tab).classList.add('active');
-  document.getElementById('nav-' + tab)?.classList.add('active');
-
-  const tabs = document.querySelectorAll('.tab');
-  const tabMap = ['overview','transactions','analysis','settings'];
-  const idx = tabMap.indexOf(tab);
-  if (idx >= 0) tabs[idx].classList.add('active');
-
-  // Show/hide FAB
-  document.getElementById('fabBtn').style.display = tab === 'settings' ? 'none' : 'flex';
-
-  if (tab === 'analysis') renderAnalysis();
-  if (tab === 'settings') renderSettings();
-  if (tab === 'transactions') renderAllTxns();
-}
-
-function renderWeekLabel() {
-  const label = document.getElementById('weekLabel');
-  if (currentWeekOffset === 0) label.textContent = '本週';
-  else if (currentWeekOffset === -1) label.textContent = '上週';
-  else {
-    const { start } = getWeekRange(currentWeekOffset);
-    label.textContent = `${start.getMonth()+1}/${start.getDate()}`;
-  }
-}
-
-function changeWeek(dir) {
-  currentWeekOffset += dir;
-  if (currentWeekOffset > 0) currentWeekOffset = 0;
-  renderWeekLabel();
+function changeMonth(dir) {
+  currentMonthOffset += dir;
+  if (currentMonthOffset > 0) currentMonthOffset = 0;
+  updateMonthLabel();
   renderOverview();
 }
 
-function getCatById(id) { return CATEGORIES.find(c => c.id === id) || CATEGORIES[CATEGORIES.length-1]; }
-function getCardById(id) { return CARDS.find(c => c.id === id) || CARDS[0]; }
+// ══════════════════════════════════════════════
+// RENDER OVERVIEW
+// ══════════════════════════════════════════════
+function renderOverview() {
+  renderHero();
+  renderMTD();
+  renderBudgetCards();
+  renderDayStrip();
+  renderDayTxns();
+}
+
+function renderHero() {
+  const txns = loadData().filter(t => isInMonth(t.date, currentMonthOffset) && t.type === 'expense');
+  const budgets = loadBudgets();
+  const totalBudget = Object.values(budgets).reduce((s, v) => s + v, 0);
+  const spent = txns.reduce((s, t) => s + t.amount, 0);
+  const remaining = totalBudget - spent;
+  document.getElementById('heroBalance').textContent = `$${remaining.toLocaleString()}`;
+  document.getElementById('heroBalance').style.color = remaining < 0 ? 'var(--danger)' : remaining < totalBudget * 0.2 ? 'var(--warning)' : 'var(--text)';
+  document.getElementById('heroSub').textContent = `已用 $${spent.toLocaleString()} / 月預算 $${totalBudget.toLocaleString()}`;
+}
+
+function renderMTD() {
+  const txns = loadData().filter(t => isInMonth(t.date, currentMonthOffset) && t.type === 'expense');
+  const budgets = loadBudgets();
+  const totalBudget = Object.values(budgets).reduce((s, v) => s + v, 0);
+  const spent = txns.reduce((s, t) => s + t.amount, 0);
+  const pct = Math.min(100, totalBudget > 0 ? (spent / totalBudget) * 100 : 0);
+
+  const now = new Date();
+  const { year, month } = getMonthRange(currentMonthOffset);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const currentDay = currentMonthOffset === 0 ? now.getDate() : daysInMonth;
+  const dayPct = (currentDay / daysInMonth) * 100;
+
+  const color = pct > dayPct + 15 ? 'var(--danger)' : pct > dayPct ? 'var(--warning)' : 'var(--safe)';
+
+  document.getElementById('mtdUsed').textContent = `$${spent.toLocaleString()}`;
+  document.getElementById('mtdBudget').textContent = `$${totalBudget.toLocaleString()}`;
+  document.getElementById('mtdFill').style.width = pct + '%';
+  document.getElementById('mtdFill').style.background = color;
+  document.getElementById('mtdDayMarker').style.left = dayPct + '%';
+  document.getElementById('mtdDays').textContent = `今日第 ${currentDay} 天 / 共 ${daysInMonth} 天 · 預算應已用 ${dayPct.toFixed(0)}%，實際已用 ${pct.toFixed(0)}%`;
+}
 
 function renderBudgetCards() {
-  const txns = loadData();
+  const txns = loadData().filter(t => isInMonth(t.date, currentMonthOffset) && t.type === 'expense');
   const budgets = loadBudgets();
   const container = document.getElementById('budgetCards');
-
-  const weekTxns = txns.filter(t => isInWeek(t.date, currentWeekOffset) && t.type === 'expense');
-
   container.innerHTML = CARDS.map(card => {
-    const spent = weekTxns.filter(t => t.card === card.id).reduce((s, t) => s + t.amount, 0);
-    const weekBudget = Math.round(budgets[card.id] / 4.33);
-    const remaining = weekBudget - spent;
-    const pct = Math.min(100, (spent / weekBudget) * 100);
-    const statusClass = pct >= 90 ? 'danger' : pct >= 70 ? 'warning' : 'safe';
-    const fillColor = pct >= 90 ? 'var(--danger)' : pct >= 70 ? 'var(--warning)' : card.color;
-
-    return `<div class="budget-card ${statusClass}" onclick="switchTab('analysis')">
+    const spent = txns.filter(t => t.card === card.id).reduce((s, t) => s + t.amount, 0);
+    const budget = budgets[card.id];
+    const remaining = budget - spent;
+    const pct = Math.min(100, budget > 0 ? (spent / budget) * 100 : 0);
+    const sc = pct >= 90 ? 'danger' : pct >= 70 ? 'warning' : 'safe';
+    const fc = pct >= 90 ? 'var(--danger)' : pct >= 70 ? 'var(--warning)' : card.color;
+    return `<div class="budget-card ${sc}">
       <div class="card-accent" style="background:${card.color}"></div>
       <span class="card-icon">${card.emoji}</span>
       <div class="card-name">${card.name}</div>
       <div class="card-remaining">$${remaining.toLocaleString()}</div>
-      <div class="card-total">週預算 $${weekBudget.toLocaleString()}</div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width:${pct}%;background:${fillColor}"></div>
-      </div>
+      <div class="card-total">月預算 $${budget.toLocaleString()}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${fc}"></div></div>
     </div>`;
   }).join('');
 }
 
-function renderHero() {
-  const txns = loadData();
-  const budgets = loadBudgets();
-  const weekTxns = txns.filter(t => isInWeek(t.date, currentWeekOffset) && t.type === 'expense');
-  const totalWeekBudget = Object.values(budgets).reduce((s, v) => s + Math.round(v / 4.33), 0);
-  const totalSpent = weekTxns.reduce((s, t) => s + t.amount, 0);
-  const remaining = totalWeekBudget - totalSpent;
-
-  document.getElementById('heroBalance').textContent = `$${remaining.toLocaleString()}`;
-  document.getElementById('heroSub').textContent = `已用 $${totalSpent.toLocaleString()} / 週預算 $${totalWeekBudget.toLocaleString()}`;
-}
-
-function renderMonthBar() {
-  const txns = loadData();
-  const budgets = loadBudgets();
-  const monthTxns = txns.filter(t => isInMonth(t.date) && t.type === 'expense');
-  const totalMonthBudget = Object.values(budgets).reduce((s, v) => s + v, 0);
-  const totalSpent = monthTxns.reduce((s, t) => s + t.amount, 0);
-  const pct = Math.min(100, (totalSpent / totalMonthBudget) * 100);
-
-  const now = new Date();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
-  const dayPct = (now.getDate() / daysInMonth) * 100;
-
-  const color = pct > dayPct + 10 ? 'var(--danger)' : pct > dayPct ? 'var(--warning)' : 'var(--safe)';
-
-  document.getElementById('monthUsed').textContent = `$${totalSpent.toLocaleString()}`;
-  document.getElementById('monthBudget').textContent = `$${totalMonthBudget.toLocaleString()}`;
-  document.getElementById('monthProgressFill').style.width = pct + '%';
-  document.getElementById('monthProgressFill').style.background = color;
-  document.getElementById('monthDayMarker').style.left = dayPct + '%';
-}
-
-function renderWeekStrip() {
-  const dates = getWeekDates(currentWeekOffset);
+function renderDayStrip() {
+  const allDates = getMonthDates(currentMonthOffset);
   const txns = loadData();
   const today = formatDate(new Date());
-  const dayNames = ['一','二','三','四','五','六','日'];
+  const dayNames = ['日','一','二','三','四','五','六'];
+
+  // Show last 7 days of the month (or current week)
+  const now = new Date();
+  const { year, month } = getMonthRange(currentMonthOffset);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const refDay = currentMonthOffset === 0 ? now.getDate() : daysInMonth;
+  const startDay = Math.max(1, refDay - 6);
+  const show = allDates.slice(startDay - 1, refDay);
 
   const strip = document.getElementById('weekStrip');
-  strip.innerHTML = dates.map((d, i) => {
+  strip.innerHTML = show.map(d => {
     const ds = formatDate(d);
     const hasTxn = txns.some(t => t.date === ds);
     const isToday = ds === today;
-    return `<div class="day-chip ${isToday ? 'active' : ''}" onclick="selectDay('${ds}')">
-      <div class="day-name">${dayNames[i]}</div>
+    const isSelected = ds === selectedDay;
+    return `<div class="day-chip ${isSelected ? 'active' : ''}" onclick="selectDay('${ds}')">
+      <div class="day-name">${dayNames[d.getDay()]}</div>
       <div class="day-num">${d.getDate()}</div>
       <div class="day-dot ${hasTxn ? '' : 'hidden'}"></div>
     </div>`;
   }).join('');
 }
 
-let selectedDay = formatDate(new Date());
 function selectDay(ds) {
   selectedDay = ds;
-  renderWeekStrip();
-  renderTodayTxns();
-  // update active
-  document.querySelectorAll('.day-chip').forEach((el, i) => {
-    const dates = getWeekDates(currentWeekOffset);
-    el.classList.toggle('active', formatDate(dates[i]) === ds);
-  });
+  renderDayStrip();
+  renderDayTxns();
 }
 
-function renderTodayTxns() {
+function renderDayTxns() {
   const txns = loadData().filter(t => t.date === selectedDay);
   const container = document.getElementById('todayTxns');
-  if (txns.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>今日暫無記錄<br>點擊 ＋ 新增</p></div>`;
+  if (!txns.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>此日暫無記錄<br>點擊 ＋ 新增</p></div>`;
     return;
   }
-  container.innerHTML = txns.slice().reverse().map(t => renderTxnItem(t)).join('');
+  container.innerHTML = txns.slice().reverse().map(t => txnHTML(t)).join('');
 }
 
-function renderAllTxns() {
-  const txns = loadData().slice().reverse();
-  const container = document.getElementById('allTxns');
-  if (txns.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>暫無記錄</p></div>`;
-    return;
-  }
-  container.innerHTML = txns.map(t => renderTxnItem(t)).join('');
-}
-
-function renderTxnItem(t) {
+function txnHTML(t) {
   const cat = getCatById(t.category);
   const card = getCardById(t.card);
   const sign = t.type === 'expense' ? '-' : '+';
@@ -1061,39 +671,49 @@ function renderTxnItem(t) {
     <div class="txn-icon" style="background:${cat.color}22">${cat.emoji}</div>
     <div class="txn-info">
       <div class="txn-desc">${t.desc || cat.label}</div>
-      <div class="txn-meta">${t.date} · ${card.name}</div>
+      <div class="txn-meta">${t.date} · ${card.name} · ${cat.label}</div>
     </div>
     <div class="txn-amount ${cls}">${sign}$${t.amount.toLocaleString()}</div>
     <button class="txn-delete" onclick="deleteTxn('${t.id}',event)">✕</button>
   </div>`;
 }
 
-function toggleDelete(el) {
-  el.classList.toggle('show-delete');
-}
+function toggleDelete(el) { el.classList.toggle('show-delete'); }
 
 function deleteTxn(id, e) {
   e.stopPropagation();
-  const data = loadData().filter(t => t.id !== id);
-  saveData(data);
+  saveData(loadData().filter(t => t.id !== id));
   renderOverview();
   renderAllTxns();
   showToast('已刪除記錄');
 }
 
-function renderOverview() {
-  renderHero();
-  renderMonthBar();
-  renderBudgetCards();
-  renderWeekStrip();
-  renderTodayTxns();
+// ══════════════════════════════════════════════
+// RENDER TRANSACTIONS TAB
+// ══════════════════════════════════════════════
+function renderAllTxns() {
+  const txns = loadData().filter(t => isInMonth(t.date, currentMonthOffset));
+  const income = txns.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const expense = txns.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+
+  document.getElementById('txnMonthSummary').innerHTML = `
+    <div class="summary-row"><span class="summary-label">本月收入</span><span class="summary-value income">+$${income.toLocaleString()}</span></div>
+    <div class="summary-row"><span class="summary-label">本月支出</span><span class="summary-value expense">-$${expense.toLocaleString()}</span></div>
+    <div class="summary-row" style="border-bottom:none"><span class="summary-label">結餘</span><span class="summary-value ${income-expense>=0?'income':'expense'}">${income-expense>=0?'+':''} $${(income-expense).toLocaleString()}</span></div>`;
+
+  const container = document.getElementById('allTxns');
+  if (!txns.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>本月暫無記錄</p></div>`;
+    return;
+  }
+  container.innerHTML = txns.slice().reverse().map(t => txnHTML(t)).join('');
 }
 
-// ============================================================
-// ANALYSIS
-// ============================================================
+// ══════════════════════════════════════════════
+// RENDER ANALYSIS
+// ══════════════════════════════════════════════
 function renderAnalysis() {
-  const txns = loadData().filter(t => isInWeek(t.date, currentWeekOffset) && t.type === 'expense');
+  const txns = loadData().filter(t => isInMonth(t.date, currentMonthOffset) && t.type === 'expense');
   renderDonut(txns);
   renderUsageBars(txns);
   renderLineChart(txns);
@@ -1103,71 +723,39 @@ function renderDonut(txns) {
   const canvas = document.getElementById('donutChart');
   const ctx = canvas.getContext('2d');
   const legend = document.getElementById('donutLegend');
-
-  // Aggregate by category
   const catMap = {};
-  txns.forEach(t => {
-    catMap[t.category] = (catMap[t.category] || 0) + t.amount;
-  });
+  txns.forEach(t => { catMap[t.category] = (catMap[t.category] || 0) + t.amount; });
   const total = Object.values(catMap).reduce((s, v) => s + v, 0);
-  const entries = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
-
-  if (total === 0) {
-    ctx.clearRect(0, 0, 120, 120);
-    ctx.fillStyle = '#2e2e3e';
-    ctx.beginPath();
-    ctx.arc(60, 60, 50, 0, Math.PI * 2);
-    ctx.fill();
+  const entries = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 7);
+  ctx.clearRect(0, 0, 120, 120);
+  if (!total) {
+    ctx.fillStyle = '#2e2e3e'; ctx.beginPath(); ctx.arc(60,60,50,0,Math.PI*2); ctx.fill();
     legend.innerHTML = '<div style="color:var(--text3);font-size:12px">暫無數據</div>';
     return;
   }
-
-  ctx.clearRect(0, 0, 120, 120);
-  let startAngle = -Math.PI / 2;
-  const colors = entries.map(([catId]) => getCatById(catId).color);
-
-  entries.forEach(([catId, val], i) => {
+  let angle = -Math.PI / 2;
+  entries.forEach(([catId, val]) => {
+    const cat = getCatById(catId);
     const slice = (val / total) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.moveTo(60, 60);
-    ctx.arc(60, 60, 52, startAngle, startAngle + slice);
-    ctx.closePath();
-    ctx.fillStyle = colors[i];
-    ctx.fill();
-    startAngle += slice;
+    ctx.beginPath(); ctx.moveTo(60,60); ctx.arc(60,60,52,angle,angle+slice); ctx.closePath();
+    ctx.fillStyle = cat.color; ctx.fill();
+    angle += slice;
   });
-
-  // Center hole
-  ctx.beginPath();
-  ctx.arc(60, 60, 32, 0, Math.PI * 2);
-  ctx.fillStyle = '#1a1a22';
-  ctx.fill();
-
-  // Center text
-  ctx.fillStyle = '#e8e8f0';
-  ctx.font = 'bold 13px -apple-system, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('$' + (total >= 1000 ? (total/1000).toFixed(1)+'k' : total), 60, 60);
-
+  ctx.beginPath(); ctx.arc(60,60,32,0,Math.PI*2); ctx.fillStyle='#1a1a22'; ctx.fill();
+  ctx.fillStyle='#e8e8f0'; ctx.font='bold 12px -apple-system,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('$'+(total>=1000?(total/1000).toFixed(1)+'k':total), 60, 60);
   legend.innerHTML = entries.map(([catId, val]) => {
     const cat = getCatById(catId);
-    return `<div class="legend-item">
-      <div class="legend-dot" style="background:${cat.color}"></div>
-      <span class="legend-name">${cat.emoji} ${cat.label}</span>
-      <span class="legend-pct" style="color:${cat.color}">${Math.round(val/total*100)}%</span>
-    </div>`;
+    return `<div class="legend-item"><div class="legend-dot" style="background:${cat.color}"></div><span class="legend-name">${cat.emoji} ${cat.label}</span><span class="legend-pct" style="color:${cat.color}">${Math.round(val/total*100)}%</span></div>`;
   }).join('');
 }
 
 function renderUsageBars(txns) {
   const budgets = loadBudgets();
-  const container = document.getElementById('usageBarChart');
-
-  container.innerHTML = CARDS.map(card => {
+  document.getElementById('usageBarChart').innerHTML = CARDS.map(card => {
     const spent = txns.filter(t => t.card === card.id).reduce((s, t) => s + t.amount, 0);
-    const weekBudget = Math.round(budgets[card.id] / 4.33);
-    const pct = weekBudget > 0 ? Math.min(100, (spent / weekBudget) * 100) : 0;
+    const budget = budgets[card.id];
+    const pct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
     const color = pct >= 90 ? 'var(--danger)' : pct >= 70 ? 'var(--warning)' : card.color;
     return `<div class="bar-row">
       <span class="bar-row-label">${card.name}</span>
@@ -1182,101 +770,65 @@ function renderLineChart(txns) {
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
-
-  const dates = getWeekDates(currentWeekOffset);
-  const dayLabels = ['一','二','三','四','五','六','日'];
-  const dailySpend = dates.map(d => {
-    const ds = formatDate(d);
-    return txns.filter(t => t.date === ds).reduce((s, t) => s + t.amount, 0);
+  const { year, month } = getMonthRange(currentMonthOffset);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daily = Array(daysInMonth).fill(0);
+  txns.forEach(t => {
+    const d = new Date(t.date).getDate();
+    if (d >= 1 && d <= daysInMonth) daily[d-1] += t.amount;
   });
-
-  const maxVal = Math.max(...dailySpend, 100);
-  const padL = 10, padR = 10, padT = 16, padB = 28;
-  const chartW = W - padL - padR;
-  const chartH = H - padT - padB;
-  const step = chartW / 6;
-
-  // Grid lines
-  ctx.strokeStyle = '#2e2e3e';
-  ctx.lineWidth = 1;
-  [0, 0.25, 0.5, 0.75, 1].forEach(f => {
-    const y = padT + chartH * (1 - f);
-    ctx.beginPath();
-    ctx.moveTo(padL, y);
-    ctx.lineTo(W - padR, y);
-    ctx.stroke();
+  const maxVal = Math.max(...daily, 100);
+  const padL=8, padR=8, padT=16, padB=28;
+  const chartW = W-padL-padR, chartH = H-padT-padB;
+  const step = chartW / Math.max(daysInMonth-1, 1);
+  ctx.strokeStyle='#2e2e3e'; ctx.lineWidth=1;
+  [0,.5,1].forEach(f => {
+    const y = padT + chartH*(1-f);
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
   });
-
-  // Area fill
-  const pts = dailySpend.map((v, i) => ({
-    x: padL + i * step,
-    y: padT + chartH * (1 - v / maxVal)
-  }));
-
-  ctx.beginPath();
-  ctx.moveTo(pts[0].x, pts[0].y);
+  const pts = daily.map((v,i) => ({ x: padL + i*step, y: padT + chartH*(1 - v/maxVal) }));
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
   pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
-  ctx.lineTo(pts[pts.length-1].x, padT + chartH);
-  ctx.lineTo(pts[0].x, padT + chartH);
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(108,99,255,0.12)';
-  ctx.fill();
-
-  // Line
-  ctx.beginPath();
-  ctx.moveTo(pts[0].x, pts[0].y);
+  ctx.lineTo(pts[pts.length-1].x, padT+chartH); ctx.lineTo(pts[0].x, padT+chartH); ctx.closePath();
+  ctx.fillStyle='rgba(108,99,255,.12)'; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
   pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
-  ctx.strokeStyle = '#6c63ff';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Dots + labels
+  ctx.strokeStyle='#6c63ff'; ctx.lineWidth=2; ctx.stroke();
+  // Show labels for every 5th day
   pts.forEach((p, i) => {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = dailySpend[i] > 0 ? '#6c63ff' : '#2e2e3e';
-    ctx.fill();
-    ctx.strokeStyle = '#0f0f13';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Day label
-    ctx.fillStyle = '#5a5a70';
-    ctx.font = '10px -apple-system, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(dayLabels[i], p.x, H - 6);
-
-    // Amount label
-    if (dailySpend[i] > 0) {
-      ctx.fillStyle = '#9090a8';
-      ctx.font = '9px -apple-system, sans-serif';
-      ctx.fillText('$' + (dailySpend[i] >= 1000 ? (dailySpend[i]/1000).toFixed(1)+'k' : dailySpend[i]), p.x, p.y - 8);
+    if (daily[i] > 0) {
+      ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2);
+      ctx.fillStyle='#6c63ff'; ctx.fill();
+    }
+    if ((i+1) % 5 === 0 || i === 0 || i === daysInMonth-1) {
+      ctx.fillStyle='#5a5a70'; ctx.font='9px -apple-system,sans-serif'; ctx.textAlign='center';
+      ctx.fillText(i+1, p.x, H-6);
     }
   });
 }
 
-// ============================================================
-// SETTINGS
-// ============================================================
+// ══════════════════════════════════════════════
+// RENDER SETTINGS
+// ══════════════════════════════════════════════
 function renderSettings() {
   const budgets = loadBudgets();
-  const container = document.getElementById('budgetSettingsList');
-  container.innerHTML = CARDS.map(card => `
+  document.getElementById('budgetSettingsList').innerHTML = CARDS.map(card => `
     <div class="budget-setting-item">
       <div class="budget-dot" style="background:${card.color}"></div>
       <div class="budget-setting-info">
         <div class="budget-setting-name">${card.emoji} ${card.name}</div>
-        <div class="budget-setting-sub">週預算 ≈ $${Math.round(budgets[card.id]/4.33).toLocaleString()}</div>
+        <div class="budget-setting-sub">月預算</div>
       </div>
       <input class="budget-setting-input" type="number" id="budget_${card.id}" value="${budgets[card.id]}" inputmode="numeric">
-    </div>
-  `).join('');
+    </div>`).join('');
+
+  renderCatLists();
 }
 
 function saveBudgets() {
   const data = {};
   CARDS.forEach(c => {
-    const val = parseFloat(document.getElementById('budget_' + c.id).value);
+    const val = parseFloat(document.getElementById('budget_'+c.id).value);
     data[c.id] = isNaN(val) ? c.defaultBudget : val;
   });
   saveBudgetData(data);
@@ -1285,171 +837,255 @@ function saveBudgets() {
   showToast('✅ 預算設定已儲存');
 }
 
-// ============================================================
+function renderCatLists() {
+  const expCats = loadExpenseCats();
+  const incCats = loadIncomeCats();
+
+  document.getElementById('expenseCatList').innerHTML = expCats.map(cat => `
+    <div class="cat-manage-item">
+      <div class="cat-manage-emoji">${cat.emoji}</div>
+      <div class="cat-manage-info">
+        <div class="cat-manage-name" style="color:${cat.color}">${cat.label}</div>
+        <div class="cat-manage-type">${cat.custom ? '自訂類別' : '預設類別'}</div>
+      </div>
+      <button class="cat-manage-del" onclick="deleteCustomCat('${cat.id}','expense')" ${cat.custom ? '' : 'disabled'} title="${cat.custom ? '刪除' : '預設類別不可刪除'}">✕</button>
+    </div>`).join('');
+
+  document.getElementById('incomeCatList').innerHTML = incCats.map(cat => `
+    <div class="cat-manage-item">
+      <div class="cat-manage-emoji">${cat.emoji}</div>
+      <div class="cat-manage-info">
+        <div class="cat-manage-name" style="color:${cat.color}">${cat.label}</div>
+        <div class="cat-manage-type">${cat.custom ? '自訂類別' : '預設類別'}</div>
+      </div>
+      <button class="cat-manage-del" onclick="deleteCustomCat('${cat.id}','income')" ${cat.custom ? '' : 'disabled'} title="${cat.custom ? '刪除' : '預設類別不可刪除'}">✕</button>
+    </div>`).join('');
+}
+
+function deleteCustomCat(id, type) {
+  if (!confirm('確認刪除此類別？')) return;
+  if (type === 'expense') {
+    const cats = loadExpenseCats().filter(c => c.id !== id);
+    saveCustomExpenseCats(cats);
+  } else {
+    const cats = loadIncomeCats().filter(c => c.id !== id);
+    saveCustomIncomeCats(cats);
+  }
+  renderCatLists();
+  showToast('類別已刪除');
+}
+
+// ══════════════════════════════════════════════
+// ADD CATEGORY MODAL
+// ══════════════════════════════════════════════
+function openAddCatModal(type) {
+  newCatType = type;
+  selectedEmoji = type === 'income' ? '💰' : '📌';
+  selectedColor = type === 'income' ? '#43d9a2' : '#6c63ff';
+  document.getElementById('addCatTitle').textContent = type === 'income' ? '新增收入類別' : '新增支出類別';
+  document.getElementById('newCatName').value = '';
+
+  // Emoji grid
+  document.getElementById('emojiGrid').innerHTML = EMOJI_LIST.map(e =>
+    `<div class="emoji-opt ${e===selectedEmoji?'selected':''}" onclick="selectEmoji('${e}')">${e}</div>`
+  ).join('');
+
+  // Color grid
+  document.getElementById('colorGrid').innerHTML = COLOR_PALETTE.map(c =>
+    `<div onclick="selectColor('${c}')" style="width:28px;height:28px;border-radius:8px;background:${c};cursor:pointer;border:3px solid ${c===selectedColor?'#fff':'transparent'};transition:border-color .15s" id="col_${c.replace('#','')}"></div>`
+  ).join('');
+
+  document.getElementById('addCatModal').classList.add('show');
+}
+
+function selectEmoji(e) {
+  selectedEmoji = e;
+  document.querySelectorAll('.emoji-opt').forEach(el => el.classList.remove('selected'));
+  event.target.classList.add('selected');
+}
+
+function selectColor(c) {
+  selectedColor = c;
+  document.querySelectorAll('#colorGrid > div').forEach(el => {
+    el.style.borderColor = el.style.background === c ? '#fff' : 'transparent';
+  });
+  // Re-render to update border
+  document.getElementById('colorGrid').innerHTML = COLOR_PALETTE.map(col =>
+    `<div onclick="selectColor('${col}')" style="width:28px;height:28px;border-radius:8px;background:${col};cursor:pointer;border:3px solid ${col===c?'#fff':'transparent'};transition:border-color .15s"></div>`
+  ).join('');
+}
+
+function saveNewCategory() {
+  const name = document.getElementById('newCatName').value.trim();
+  if (!name) { showToast('⚠️ 請輸入類別名稱'); return; }
+  const newCat = {
+    id: 'custom_' + Date.now(),
+    label: name,
+    emoji: selectedEmoji,
+    color: selectedColor,
+    custom: true,
+  };
+  if (newCatType === 'expense') {
+    const cats = loadExpenseCats();
+    cats.push(newCat);
+    saveCustomExpenseCats(cats);
+  } else {
+    const cats = loadIncomeCats();
+    cats.push(newCat);
+    saveCustomIncomeCats(cats);
+  }
+  closeModal('addCatModal');
+  renderCatLists();
+  showToast(`✅ 已新增「${name}」類別`);
+}
+
+// ══════════════════════════════════════════════
 // ADD TRANSACTION MODAL
-// ============================================================
+// ══════════════════════════════════════════════
 function openAddModal() {
-  // Set today's date
   document.getElementById('dateInput').value = formatDate(new Date());
   document.getElementById('amountInput').value = '';
   document.getElementById('descInput').value = '';
   setType('expense');
-  renderCatGrid();
-  renderCardSelect();
   document.getElementById('addModal').classList.add('show');
 }
 
-function handleModalClick(e) {
-  if (e.target === document.getElementById('addModal')) {
-    document.getElementById('addModal').classList.remove('show');
-  }
+function handleModalBg(e, id) {
+  if (e.target === document.getElementById(id)) closeModal(id);
 }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
 function setType(type) {
   selectedType = type;
-  document.getElementById('typeExpense').className = 'type-btn' + (type === 'expense' ? ' active-expense' : '');
-  document.getElementById('typeIncome').className = 'type-btn' + (type === 'income' ? ' active-income' : '');
-  document.getElementById('catGroup').style.display = type === 'expense' ? 'block' : 'none';
-  document.getElementById('cardGroup').style.display = 'block';
+  document.getElementById('typeExpense').className = 'type-btn' + (type==='expense'?' active-expense':'');
+  document.getElementById('typeIncome').className = 'type-btn' + (type==='income'?' active-income':'');
+  // Default category
+  if (type === 'expense') selectedCatId = 'food';
+  else selectedCatId = 'salary';
+  renderCatGrid();
+  renderCardSelect();
 }
 
 function renderCatGrid() {
-  const grid = document.getElementById('catGrid');
-  grid.innerHTML = CATEGORIES.map(c => `
-    <button class="cat-btn ${c.id === selectedCat ? 'active' : ''}" onclick="selectCat('${c.id}')">
+  const cats = selectedType === 'expense' ? loadExpenseCats() : loadIncomeCats();
+  document.getElementById('catGrid').innerHTML = cats.map(c =>
+    `<button class="cat-btn ${c.id===selectedCatId?'active':''}" onclick="selectCat('${c.id}')">
       <span class="cat-emoji">${c.emoji}</span>
       <span class="cat-label">${c.label}</span>
-    </button>
-  `).join('');
+    </button>`
+  ).join('');
 }
 
-function selectCat(id) {
-  selectedCat = id;
-  renderCatGrid();
-}
+function selectCat(id) { selectedCatId = id; renderCatGrid(); }
 
 function renderCardSelect() {
-  const sel = document.getElementById('cardSelect');
-  sel.innerHTML = CARDS.map(c => `
-    <button class="card-btn ${c.id === selectedCard ? 'active' : ''}" onclick="selectCard('${c.id}')">
+  document.getElementById('cardSelect').innerHTML = CARDS.map(c =>
+    `<button class="card-btn ${c.id===selectedCardId?'active':''}" onclick="selectCard('${c.id}')">
       <div class="card-dot" style="background:${c.color}"></div>
       <span class="card-btn-name">${c.name}</span>
-    </button>
-  `).join('');
+    </button>`
+  ).join('');
 }
 
-function selectCard(id) {
-  selectedCard = id;
-  renderCardSelect();
-}
+function selectCard(id) { selectedCardId = id; renderCardSelect(); }
 
 function addTransaction() {
   const amount = parseFloat(document.getElementById('amountInput').value);
   const desc = document.getElementById('descInput').value.trim();
   const date = document.getElementById('dateInput').value;
-
   if (!amount || amount <= 0) { showToast('⚠️ 請輸入有效金額'); return; }
   if (!date) { showToast('⚠️ 請選擇日期'); return; }
-
-  const txn = {
-    id: Date.now().toString(),
-    type: selectedType,
-    amount: amount,
-    desc: desc,
-    category: selectedType === 'expense' ? selectedCat : 'other',
-    card: selectedCard,
-    date: date,
-  };
-
+  const txn = { id: Date.now().toString(), type: selectedType, amount, desc, category: selectedCatId, card: selectedCardId, date };
   const data = loadData();
   data.push(txn);
   saveData(data);
-
-  document.getElementById('addModal').classList.remove('show');
+  closeModal('addModal');
   selectedDay = date;
+  // Switch to month of added transaction if needed
   renderOverview();
   renderAllTxns();
   showToast('✅ 已新增記錄');
 }
 
-// ============================================================
+// ══════════════════════════════════════════════
 // DATA MANAGEMENT
-// ============================================================
-function clearWeekData() {
-  if (!confirm('確認清除本週所有記錄？')) return;
-  const data = loadData().filter(t => !isInWeek(t.date, currentWeekOffset));
-  saveData(data);
-  renderOverview();
-  showToast('本週記錄已清除');
-}
-
+// ══════════════════════════════════════════════
 function clearAllData() {
   if (!confirm('確認清除所有記錄？此操作不可復原。')) return;
   saveData([]);
   renderOverview();
+  renderAllTxns();
   showToast('所有記錄已清除');
 }
 
 function exportCSV() {
   const data = loadData();
-  if (data.length === 0) { showToast('暫無數據可匯出'); return; }
+  if (!data.length) { showToast('暫無數據可匯出'); return; }
   const headers = ['日期','類型','金額','描述','類別','帳戶'];
-  const rows = data.map(t => [
-    t.date,
-    t.type === 'expense' ? '支出' : '收入',
-    t.amount,
-    t.desc,
-    getCatById(t.category).label,
-    getCardById(t.card).name
-  ]);
-  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const rows = data.map(t => [t.date, t.type==='expense'?'支出':'收入', t.amount, t.desc, getCatById(t.category).label, getCardById(t.card).name]);
+  const csv = [headers,...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `消費記錄_${formatDate(new Date())}.csv`;
-  a.click();
+  a.href = url; a.download = `消費記錄_${formatDate(new Date())}.csv`; a.click();
   URL.revokeObjectURL(url);
   showToast('✅ CSV 已匯出');
 }
 
-// ============================================================
+// ══════════════════════════════════════════════
+// TABS & NAV
+// ══════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.getElementById('nav-'+tab)?.classList.add('active');
+  const tabMap = ['overview','transactions','analysis','settings'];
+  const tabs = document.querySelectorAll('.tab');
+  const idx = tabMap.indexOf(tab);
+  if (idx >= 0) tabs[idx].classList.add('active');
+  document.getElementById('fabBtn').style.display = tab==='settings' ? 'none' : 'flex';
+  if (tab==='analysis') renderAnalysis();
+  if (tab==='settings') renderSettings();
+  if (tab==='transactions') renderAllTxns();
+}
+
+// ══════════════════════════════════════════════
 // TOAST
-// ============================================================
+// ══════════════════════════════════════════════
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-// ============================================================
-// INIT
-// ============================================================
-// Add some demo data if empty
+// ══════════════════════════════════════════════
+// DEMO DATA
+// ══════════════════════════════════════════════
 function addDemoData() {
   if (loadData().length > 0) return;
-  const today = new Date();
-  const fmt = d => d.toISOString().split('T')[0];
-  const d = (offset) => { const x = new Date(today); x.setDate(today.getDate()-offset); return fmt(x); };
-
+  const fmt = d => { const x = new Date(); x.setDate(x.getDate()-d); return x.toISOString().split('T')[0]; };
   const demos = [
-    { id:'d1', type:'expense', amount:85,    desc:'Foodpanda 外賣',    category:'food',            card:'mox_cc',    date:d(0) },
-    { id:'d2', type:'expense', amount:320,   desc:'超市買菜',          category:'grocery',         card:'mox_bank',  date:d(0) },
-    { id:'d3', type:'expense', amount:12.8,  desc:'港鐵（八達通增值）', category:'transport',       card:'mox_cc',    date:d(1) },
-    { id:'d4', type:'expense', amount:168,   desc:'貓糧（Kangaroo）',  category:'pet',             card:'mox_cc',    date:d(1) },
-    { id:'d5', type:'expense', amount:238,   desc:'淘寶購物',          category:'online_shopping', card:'amex',      date:d(2) },
-    { id:'d6', type:'expense', amount:88,    desc:'Apple Music 家庭版', category:'digital',        card:'mox_cc',    date:d(3) },
-    { id:'d7', type:'expense', amount:450,   desc:'餐廳晚飯',          category:'food',            card:'boc_master', date:d(3) },
-    { id:'d8', type:'income',  amount:52700, desc:'薪金',              category:'other',           card:'mox_bank',  date:d(4) },
-    { id:'d9', type:'expense', amount:6250,  desc:'租金（Dicky）',     category:'transfer',        card:'mox_bank',  date:d(5) },
-    { id:'d10',type:'expense', amount:1368,  desc:'政府讀書貸款',      category:'other',           card:'boc_visa',  date:d(6) },
+    { id:'d1',  type:'income',  amount:52000, desc:'薪金',           category:'salary',         card:'mox_bank',  date:fmt(25) },
+    { id:'d2',  type:'expense', amount:6250,  desc:'租金 (Dicky)',   category:'transfer',       card:'mox_bank',  date:fmt(20) },
+    { id:'d3',  type:'expense', amount:1368,  desc:'政府貸款',       category:'transfer',       card:'boc_visa',  date:fmt(18) },
+    { id:'d4',  type:'expense', amount:1200,  desc:'電費/水費/網絡', category:'utilities',      card:'mox_bank',  date:fmt(15) },
+    { id:'d5',  type:'expense', amount:85,    desc:'Foodpanda 外賣', category:'food',           card:'mox_cc',    date:fmt(5)  },
+    { id:'d6',  type:'expense', amount:320,   desc:'超市買菜',       category:'grocery',        card:'mox_bank',  date:fmt(4)  },
+    { id:'d7',  type:'expense', amount:238,   desc:'淘寶購物',       category:'online_shopping',card:'amex',      date:fmt(3)  },
+    { id:'d8',  type:'expense', amount:168,   desc:'貓糧 (Kangaroo)',category:'pet',            card:'mox_cc',    date:fmt(2)  },
+    { id:'d9',  type:'expense', amount:88,    desc:'Apple Music',   category:'digital',        card:'mox_cc',    date:fmt(1)  },
+    { id:'d10', type:'expense', amount:12.8,  desc:'港鐵八達通',    category:'transport',      card:'mox_cc',    date:fmt(0)  },
   ];
   saveData(demos);
 }
 
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
 addDemoData();
-renderWeekLabel();
+updateMonthLabel();
 renderOverview();
 </script>
 </body>

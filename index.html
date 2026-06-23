@@ -102,7 +102,9 @@
   .txn-amount.expense { color:var(--danger); }
   .txn-amount.income { color:var(--safe); }
   .txn-delete { width:26px; height:26px; background:rgba(255,77,109,.12); border:none; border-radius:7px; color:var(--danger); font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; opacity:0; transition:opacity .2s; }
+  .txn-edit { width:26px; height:26px; background:rgba(108,99,255,.12); border:none; border-radius:7px; color:var(--accent); font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; opacity:0; transition:opacity .2s; margin-right:4px; }
   .txn-item.show-delete .txn-delete { opacity:1; }
+  .txn-item.show-delete .txn-edit { opacity:1; }
   .empty-state { text-align:center; padding:36px 20px; color:var(--text3); }
   .empty-state .empty-icon { font-size:38px; margin-bottom:10px; }
   .empty-state p { font-size:13px; }
@@ -326,11 +328,20 @@
       <span class="summary-label">匯出 CSV</span>
       <button onclick="exportCSV()" style="background:rgba(108,99,255,.12);border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:6px 13px;font-size:12px;cursor:pointer;font-family:inherit;">匯出</button>
     </div>
+    <div class="summary-row">
+      <span class="summary-label">備份 JSON（跨裝置同步）</span>
+      <button onclick="exportJSON()" style="background:rgba(67,217,162,.12);border:1px solid var(--safe);color:var(--safe);border-radius:8px;padding:6px 13px;font-size:12px;cursor:pointer;font-family:inherit;">備份</button>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">還原 JSON（從備份匯入）</span>
+      <button onclick="document.getElementById('importJsonInput').click()" style="background:rgba(253,121,168,.12);border:1px solid #fd79a8;color:#fd79a8;border-radius:8px;padding:6px 13px;font-size:12px;cursor:pointer;font-family:inherit;">還原</button>
+    </div>
     <div class="summary-row" style="border-bottom:none">
       <span class="summary-label">清除所有記錄</span>
       <button onclick="clearAllData()" style="background:rgba(255,77,109,.12);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:6px 13px;font-size:12px;cursor:pointer;font-family:inherit;">清除</button>
     </div>
   </div>
+  <input type="file" id="importJsonInput" accept=".json" style="display:none" onchange="importJSON(event)">
 </div>
 
 <!-- FAB -->
@@ -402,6 +413,47 @@
     </div>
     <button class="btn-submit" onclick="saveNewCategory()">新增類別</button>
     <button class="btn-secondary" onclick="closeModal('addCatModal')">取消</button>
+  </div>
+</div>
+
+
+<!-- Edit Transaction Modal -->
+<div class="modal-overlay" id="editModal" onclick="handleModalBg(event,'editModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>編輯記錄</h2>
+    <div class="form-group">
+      <label class="form-label">類型</label>
+      <div class="type-toggle">
+        <button class="type-btn active-expense" id="editTypeExpense" onclick="setEditType('expense')">💸 支出</button>
+        <button class="type-btn" id="editTypeIncome" onclick="setEditType('income')">💰 收入</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">金額 (HKD)</label>
+      <div class="amount-input-wrap">
+        <span class="amount-prefix">$</span>
+        <input class="form-input" type="number" id="editAmountInput" placeholder="0.00" inputmode="decimal" step="0.01">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">描述</label>
+      <input class="form-input" type="text" id="editDescInput" placeholder="例：超市買菜、外賣">
+    </div>
+    <div class="form-group">
+      <label class="form-label">類別</label>
+      <div class="cat-grid" id="editCatGrid"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">帳戶 / 信用卡</label>
+      <div class="card-select" id="editCardSelect"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">日期</label>
+      <input class="form-input" type="date" id="editDateInput">
+    </div>
+    <button class="btn-submit" onclick="saveEditTransaction()">儲存修改</button>
+    <button class="btn-secondary" onclick="closeModal('editModal')">取消</button>
   </div>
 </div>
 
@@ -479,6 +531,10 @@ let selectedDay = formatDate(new Date());
 let newCatType = 'expense';
 let selectedEmoji = '📌';
 let selectedColor = '#6c63ff';
+let editingTxnId = null;
+let editSelectedType = 'expense';
+let editSelectedCatId = 'food';
+let editSelectedCardId = 'mox_cc';
 
 function loadData() { return JSON.parse(localStorage.getItem('bt_txns') || '[]'); }
 function saveData(d) { localStorage.setItem('bt_txns', JSON.stringify(d)); }
@@ -674,6 +730,7 @@ function txnHTML(t) {
       <div class="txn-meta">${t.date} · ${card.name} · ${cat.label}</div>
     </div>
     <div class="txn-amount ${cls}">${sign}$${t.amount.toLocaleString()}</div>
+    <button class="txn-edit" onclick="openEditModal('${t.id}',event)">✏️</button>
     <button class="txn-delete" onclick="deleteTxn('${t.id}',event)">✕</button>
   </div>`;
 }
@@ -1008,6 +1065,122 @@ function addTransaction() {
 }
 
 // ══════════════════════════════════════════════
+// EDIT TRANSACTION
+// ══════════════════════════════════════════════
+function openEditModal(id, e) {
+  e.stopPropagation();
+  const txn = loadData().find(t => t.id === id);
+  if (!txn) return;
+  editingTxnId = id;
+  editSelectedType = txn.type;
+  editSelectedCatId = txn.category;
+  editSelectedCardId = txn.card;
+  document.getElementById('editAmountInput').value = txn.amount;
+  document.getElementById('editDescInput').value = txn.desc || '';
+  document.getElementById('editDateInput').value = txn.date;
+  setEditType(txn.type);
+  document.getElementById('editModal').classList.add('show');
+}
+
+function setEditType(type) {
+  editSelectedType = type;
+  document.getElementById('editTypeExpense').className = 'type-btn' + (type==='expense'?' active-expense':'');
+  document.getElementById('editTypeIncome').className = 'type-btn' + (type==='income'?' active-income':'');
+  if (type === 'expense' && editSelectedCatId === 'salary') editSelectedCatId = 'food';
+  if (type === 'income' && editSelectedCatId === 'food') editSelectedCatId = 'salary';
+  renderEditCatGrid();
+  renderEditCardSelect();
+}
+
+function renderEditCatGrid() {
+  const cats = editSelectedType === 'expense' ? loadExpenseCats() : loadIncomeCats();
+  document.getElementById('editCatGrid').innerHTML = cats.map(c =>
+    `<button class="cat-btn ${c.id===editSelectedCatId?'active':''}" onclick="selectEditCat('${c.id}')">
+      <span class="cat-emoji">${c.emoji}</span>
+      <span class="cat-label">${c.label}</span>
+    </button>`
+  ).join('');
+}
+
+function selectEditCat(id) { editSelectedCatId = id; renderEditCatGrid(); }
+
+function renderEditCardSelect() {
+  document.getElementById('editCardSelect').innerHTML = CARDS.map(c =>
+    `<button class="card-btn ${c.id===editSelectedCardId?'active':''}" onclick="selectEditCard('${c.id}')">
+      <div class="card-dot" style="background:${c.color}"></div>
+      <span class="card-btn-name">${c.name}</span>
+    </button>`
+  ).join('');
+}
+
+function selectEditCard(id) { editSelectedCardId = id; renderEditCardSelect(); }
+
+function saveEditTransaction() {
+  const amount = parseFloat(document.getElementById('editAmountInput').value);
+  const desc = document.getElementById('editDescInput').value.trim();
+  const date = document.getElementById('editDateInput').value;
+  if (!amount || amount <= 0) { showToast('⚠️ 請輸入有效金額'); return; }
+  if (!date) { showToast('⚠️ 請選擇日期'); return; }
+  const data = loadData().map(t => {
+    if (t.id !== editingTxnId) return t;
+    return { ...t, type: editSelectedType, amount, desc, category: editSelectedCatId, card: editSelectedCardId, date };
+  });
+  saveData(data);
+  closeModal('editModal');
+  selectedDay = date;
+  renderOverview();
+  renderAllTxns();
+  showToast('✅ 記錄已更新');
+}
+
+// ══════════════════════════════════════════════
+// JSON BACKUP & RESTORE
+// ══════════════════════════════════════════════
+function exportJSON() {
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    txns: loadData(),
+    budgets: JSON.parse(localStorage.getItem('bt_budgets') || '{}'),
+    expCats: JSON.parse(localStorage.getItem('bt_exp_cats') || '[]'),
+    incCats: JSON.parse(localStorage.getItem('bt_inc_cats') || '[]'),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  a.href = url;
+  a.download = `消費備份_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ 備份已下載');
+}
+
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const payload = JSON.parse(e.target.result);
+      if (!payload.txns || !Array.isArray(payload.txns)) throw new Error('格式錯誤');
+      if (!confirm(`確認還原？將載入 ${payload.txns.length} 筆記錄，現有數據將被覆蓋。`)) return;
+      saveData(payload.txns);
+      if (payload.budgets) localStorage.setItem('bt_budgets', JSON.stringify(payload.budgets));
+      if (payload.expCats) localStorage.setItem('bt_exp_cats', JSON.stringify(payload.expCats));
+      if (payload.incCats) localStorage.setItem('bt_inc_cats', JSON.stringify(payload.incCats));
+      renderOverview();
+      renderAllTxns();
+      showToast(`✅ 已還原 ${payload.txns.length} 筆記錄`);
+    } catch(err) {
+      showToast('⚠️ 檔案格式錯誤，請選擇正確的備份 JSON');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ══════════════════════════════════════════════
 // DATA MANAGEMENT
 // ══════════════════════════════════════════════
 function clearAllData() {
@@ -1061,24 +1234,13 @@ function showToast(msg) {
 }
 
 // ══════════════════════════════════════════════
-// DEMO DATA
+// PRELOAD DATA (2026-06 records from CSV)
 // ══════════════════════════════════════════════
+const PRELOAD_TXNS = [{"id":"csv_1_20260618","type":"expense","amount":1367.5,"desc":"Government Load Repayment Covid Loan","category":"instalment","card":"cash","date":"2026-06-18"},{"id":"csv_2_20260611","type":"expense","amount":200.0,"desc":"香港紅十字會","category":"other_exp","card":"cash","date":"2026-06-11"},{"id":"csv_3_20260601","type":"expense","amount":663.0,"desc":"咖啡豆 My Little Coffee","category":"dept_store","card":"mox_cc","date":"2026-06-01"},{"id":"csv_4_20260601","type":"expense","amount":317.6,"desc":"惠康","category":"grocery","card":"mox_cc","date":"2026-06-01"},{"id":"csv_5_20260601","type":"expense","amount":188.0,"desc":"Patreon 台長","category":"digital","card":"mox_cc","date":"2026-06-01"},{"id":"csv_6_20260602","type":"expense","amount":2000.0,"desc":"Student Loan Repayment - EMBA","category":"education","card":"mox_cc","date":"2026-06-02"},{"id":"csv_7_20260603","type":"expense","amount":2500.0,"desc":"BOC Master Card","category":"transfer","card":"mox_bank","date":"2026-06-03"},{"id":"csv_8_20260603","type":"expense","amount":630.0,"desc":"CLP Power","category":"utilities","card":"mox_cc","date":"2026-06-03"},{"id":"csv_9_20260603","type":"expense","amount":162.0,"desc":"Big C Olympian","category":"dept_store","card":"mox_cc","date":"2026-06-03"},{"id":"csv_10_20260603","type":"expense","amount":108.0,"desc":"MKT Red MKT","category":"dept_store","card":"mox_cc","date":"2026-06-03"},{"id":"csv_11_20260604","type":"expense","amount":196.0,"desc":"PCCW Netvigator","category":"utilities","card":"mox_cc","date":"2026-06-04"},{"id":"csv_12_20260604","type":"expense","amount":600.0,"desc":"Marky - We Chat Pay Recharge","category":"transfer","card":"mox_bank","date":"2026-06-04"},{"id":"csv_13_20260604","type":"expense","amount":213.0,"desc":"Delicious Eatery","category":"food","card":"mox_cc","date":"2026-06-04"},{"id":"csv_14_20260605","type":"expense","amount":168.2,"desc":"Food Panda","category":"food","card":"mox_cc","date":"2026-06-05"},{"id":"csv_15_20260605","type":"expense","amount":320.0,"desc":"Pat Vet - 黃寶","category":"pet","card":"mox_cc","date":"2026-06-05"},{"id":"csv_16_20260605","type":"expense","amount":88.0,"desc":"Ganto Gelato","category":"food","card":"mox_cc","date":"2026-06-05"},{"id":"csv_17_20260605","type":"expense","amount":120.2,"desc":"Uber","category":"transport","card":"mox_cc","date":"2026-06-05"},{"id":"csv_18_20260605","type":"expense","amount":107.78,"desc":"Uber","category":"transport","card":"mox_cc","date":"2026-06-05"},{"id":"csv_19_20260601","type":"expense","amount":6250.0,"desc":"租金 - Dicky","category":"utilities","card":"mox_bank","date":"2026-06-01"},{"id":"csv_20_20260605","type":"expense","amount":42.97,"desc":"Uber","category":"transport","card":"mox_cc","date":"2026-06-05"},{"id":"csv_21_20260607","type":"expense","amount":156.65,"desc":"SoloLearn - phone app - python learning","category":"digital","card":"mox_cc","date":"2026-06-07"},{"id":"csv_22_20260607","type":"expense","amount":300.0,"desc":"Movie - Disclosure Day","category":"entertainment","card":"mox_cc","date":"2026-06-07"},{"id":"csv_23_20260607","type":"expense","amount":266.0,"desc":"Apple Bill - Homeescape in app purchase","category":"digital","card":"mox_cc","date":"2026-06-07"},{"id":"csv_24_20260607","type":"expense","amount":500.0,"desc":"八達通增值","category":"transport","card":"mox_cc","date":"2026-06-07"},{"id":"csv_25_20260608","type":"expense","amount":601.0,"desc":"惠康網上購物","category":"grocery","card":"mox_cc","date":"2026-06-08"},{"id":"csv_26_20260610","type":"expense","amount":326.0,"desc":"Lunch with Moka - Hygge","category":"food","card":"mox_cc","date":"2026-06-10"},{"id":"csv_27_20260610","type":"expense","amount":795.0,"desc":"貓咪干糧 - Pet Pet Home","category":"food","card":"mox_cc","date":"2026-06-10"},{"id":"csv_28_20260610","type":"expense","amount":22.0,"desc":"Apple Bill - Homeescape in app purchase","category":"digital","card":"mox_cc","date":"2026-06-10"},{"id":"csv_29_20260611","type":"expense","amount":298.0,"desc":"UNIQLO","category":"fashion","card":"mox_cc","date":"2026-06-11"},{"id":"csv_30_20260611","type":"expense","amount":392.0,"desc":"Dinner with Dicky - Sushiro","category":"food","card":"mox_cc","date":"2026-06-11"},{"id":"csv_31_20260612","type":"expense","amount":23.0,"desc":"Apple Bill - I cloud","category":"digital","card":"mox_cc","date":"2026-06-12"},{"id":"csv_32_20260612","type":"expense","amount":78.36,"desc":"Monica - Token additional purchase","category":"digital","card":"mox_cc","date":"2026-06-12"},{"id":"csv_33_20260613","type":"expense","amount":189.0,"desc":"Apple Bill - Homeescape in app purchase","category":"digital","card":"mox_cc","date":"2026-06-13"},{"id":"csv_34_20260612","type":"expense","amount":500.0,"desc":"八達通增值","category":"transport","card":"mox_cc","date":"2026-06-12"},{"id":"csv_35_20260613","type":"expense","amount":800.0,"desc":"COS","category":"fashion","card":"mox_cc","date":"2026-06-13"},{"id":"csv_36_20260614","type":"expense","amount":1343.29,"desc":"Salary Tax - Repayment 2/8","category":"instalment","card":"mox_cc","date":"2026-06-14"},{"id":"csv_37_20260614","type":"expense","amount":466.5,"desc":"Bakehouse","category":"food","card":"mox_cc","date":"2026-06-14"},{"id":"csv_38_20260614","type":"expense","amount":100.0,"desc":"Bakehouse","category":"food","card":"mox_cc","date":"2026-06-14"},{"id":"csv_39_20260614","type":"expense","amount":789.2,"desc":"Citysuper","category":"food","card":"mox_cc","date":"2026-06-14"},{"id":"csv_40_20260614","type":"expense","amount":344.8,"desc":"JP Living Style 日用品","category":"grocery","card":"mox_cc","date":"2026-06-14"},{"id":"csv_41_20260614","type":"expense","amount":312.0,"desc":"Apple Bill - Homeescape in app purchase","category":"digital","card":"mox_cc","date":"2026-06-14"},{"id":"csv_42_20260615","type":"expense","amount":260.0,"desc":"Lunch - 大埔藝術中心","category":"food","card":"mox_cc","date":"2026-06-15"},{"id":"csv_43_20260615","type":"expense","amount":992.0,"desc":"Les Gouttes 肉食","category":"food","card":"mox_cc","date":"2026-06-15"},{"id":"csv_44_20260616","type":"expense","amount":335.0,"desc":"Lunch with Moka 吉列豬","category":"food","card":"mox_cc","date":"2026-06-16"},{"id":"csv_45_20260616","type":"expense","amount":78.0,"desc":"Greenprice - 平價產品","category":"dept_store","card":"mox_cc","date":"2026-06-16"},{"id":"csv_46_20260617","type":"expense","amount":1347.53,"desc":"Europe 機票 replayment 6/12","category":"instalment","card":"mox_cc","date":"2026-06-17"},{"id":"csv_47_20260618","type":"expense","amount":168.0,"desc":"Apple bill - Homeescape - in app purchase","category":"digital","card":"mox_cc","date":"2026-06-18"},{"id":"csv_48_20260618","type":"expense","amount":167.2,"desc":"Food Panda","category":"food","card":"mox_cc","date":"2026-06-18"},{"id":"csv_49_20260618","type":"expense","amount":736.75,"desc":"I herb","category":"health","card":"mox_cc","date":"2026-06-18"},{"id":"csv_50_20260618","type":"expense","amount":397.0,"desc":"UNIQLO","category":"fashion","card":"mox_cc","date":"2026-06-18"},{"id":"csv_51_20260619","type":"expense","amount":555.5,"desc":"Citysuper","category":"food","card":"mox_cc","date":"2026-06-19"},{"id":"csv_52_20260619","type":"expense","amount":500.0,"desc":"八達通增值","category":"transport","card":"mox_cc","date":"2026-06-19"},{"id":"csv_53_20260619","type":"expense","amount":50.0,"desc":"MKT RED MKT","category":"grocery","card":"mox_cc","date":"2026-06-19"},{"id":"csv_54_20260620","type":"expense","amount":148.0,"desc":"Apple Bill - Game","category":"digital","card":"mox_cc","date":"2026-06-20"},{"id":"csv_55_20260621","type":"expense","amount":19.0,"desc":"Market Place","category":"grocery","card":"mox_cc","date":"2026-06-21"},{"id":"csv_56_20260621","type":"expense","amount":243.8,"desc":"惠康","category":"grocery","card":"mox_cc","date":"2026-06-21"},{"id":"csv_57_20260621","type":"expense","amount":78.36,"desc":"Monica - Token additional purchase","category":"digital","card":"mox_cc","date":"2026-06-21"},{"id":"csv_58_20260622","type":"expense","amount":216.0,"desc":"Lunch with Moka - Sensory Zero","category":"food","card":"mox_cc","date":"2026-06-22"},{"id":"csv_59_20260622","type":"expense","amount":170.0,"desc":"Apple bill","category":"digital","card":"mox_cc","date":"2026-06-22"},{"id":"csv_60_20260622","type":"expense","amount":492.0,"desc":"Simple Life","category":"fashion","card":"mox_cc","date":"2026-06-22"},{"id":"csv_61_20260623","type":"expense","amount":78.4,"desc":"Monica - Token additional purchase","category":"digital","card":"mox_cc","date":"2026-06-23"},{"id":"csv_62_20260623","type":"expense","amount":3.75,"desc":"Google - additional storage","category":"digital","card":"mox_cc","date":"2026-06-23"},{"id":"csv_63_20260623","type":"expense","amount":78.4,"desc":"Monica - token additional purchase","category":"digital","card":"mox_cc","date":"2026-06-23"},{"id":"csv_64_20260623","type":"expense","amount":54.9,"desc":"惠康","category":"grocery","card":"mox_cc","date":"2026-06-23"},{"id":"csv_65_20260605","type":"expense","amount":708.0,"desc":"Dinner with Jack sze","category":"food","card":"mox_bank","date":"2026-06-05"},{"id":"csv_66_20260606","type":"expense","amount":3000.0,"desc":"Cash transfer to BOC","category":"food","card":"mox_bank","date":"2026-06-06"},{"id":"csv_67_20260615","type":"expense","amount":123.0,"desc":"Taxi","category":"transport","card":"mox_bank","date":"2026-06-15"},{"id":"csv_68_20260615","type":"expense","amount":800.0,"desc":"Cash transfer to BOC","category":"transfer","card":"mox_bank","date":"2026-06-15"},{"id":"csv_69_20260601","type":"expense","amount":810.0,"desc":"Contact Lens - Cons Station","category":"grocery","card":"mox_bank","date":"2026-06-01"},{"id":"csv_70_20260601","type":"expense","amount":224.0,"desc":"Lunch 十大碗","category":"food","card":"boc_master","date":"2026-06-01"},{"id":"csv_71_20260602","type":"expense","amount":128.0,"desc":"Taxi","category":"transport","card":"boc_master","date":"2026-06-02"},{"id":"csv_72_20260606","type":"expense","amount":1068.0,"desc":"張記參茸海味","category":"food","card":"boc_master","date":"2026-06-06"},{"id":"csv_73_20260606","type":"expense","amount":820.46,"desc":"淘寶","category":"grocery","card":"boc_master","date":"2026-06-06"},{"id":"csv_74_20260607","type":"expense","amount":30.0,"desc":"Google Bill","category":"digital","card":"boc_master","date":"2026-06-07"},{"id":"csv_75_20260606","type":"expense","amount":389.41,"desc":"淘寶","category":"fashion","card":"boc_master","date":"2026-06-06"},{"id":"csv_76_20260615","type":"income","amount":942.46,"desc":"淘寶退款","category":"refund","card":"boc_master","date":"2026-06-15"},{"id":"csv_77_20260615","type":"expense","amount":719.35,"desc":"淘寶","category":"fashion","card":"boc_master","date":"2026-06-15"},{"id":"csv_78_20260618","type":"expense","amount":187.1,"desc":"淘寶","category":"dept_store","card":"boc_master","date":"2026-06-18"},{"id":"csv_79_20260621","type":"expense","amount":417.13,"desc":"淘寶","category":"fashion","card":"boc_master","date":"2026-06-21"},{"id":"csv_80_20260619","type":"income","amount":303.23,"desc":"淘寶退款","category":"refund","card":"boc_master","date":"2026-06-19"},{"id":"csv_81_20260605","type":"expense","amount":62.0,"desc":"Apple Bill","category":"food","card":"boc_visa","date":"2026-06-05"},{"id":"csv_82_20260601","type":"expense","amount":218.0,"desc":"Apple Bill","category":"digital","card":"boc_visa","date":"2026-06-01"},{"id":"csv_83_20260604","type":"expense","amount":178.0,"desc":"Apple Bill","category":"digital","card":"boc_visa","date":"2026-06-04"},{"id":"csv_84_20260612","type":"expense","amount":118.0,"desc":"Capcut Subscribed - Jun","category":"digital","card":"amex","date":"2026-06-12"}];
+
 function addDemoData() {
   if (loadData().length > 0) return;
-  const fmt = d => { const x = new Date(); x.setDate(x.getDate()-d); return x.toISOString().split('T')[0]; };
-  const demos = [
-    { id:'d1',  type:'income',  amount:52000, desc:'薪金',           category:'salary',         card:'mox_bank',  date:fmt(25) },
-    { id:'d2',  type:'expense', amount:6250,  desc:'租金 (Dicky)',   category:'transfer',       card:'mox_bank',  date:fmt(20) },
-    { id:'d3',  type:'expense', amount:1368,  desc:'政府貸款',       category:'transfer',       card:'boc_visa',  date:fmt(18) },
-    { id:'d4',  type:'expense', amount:1200,  desc:'電費/水費/網絡', category:'utilities',      card:'mox_bank',  date:fmt(15) },
-    { id:'d5',  type:'expense', amount:85,    desc:'Foodpanda 外賣', category:'food',           card:'mox_cc',    date:fmt(5)  },
-    { id:'d6',  type:'expense', amount:320,   desc:'超市買菜',       category:'grocery',        card:'mox_bank',  date:fmt(4)  },
-    { id:'d7',  type:'expense', amount:238,   desc:'淘寶購物',       category:'online_shopping',card:'amex',      date:fmt(3)  },
-    { id:'d8',  type:'expense', amount:168,   desc:'貓糧 (Kangaroo)',category:'pet',            card:'mox_cc',    date:fmt(2)  },
-    { id:'d9',  type:'expense', amount:88,    desc:'Apple Music',   category:'digital',        card:'mox_cc',    date:fmt(1)  },
-    { id:'d10', type:'expense', amount:12.8,  desc:'港鐵八達通',    category:'transport',      card:'mox_cc',    date:fmt(0)  },
-  ];
-  saveData(demos);
+  saveData(PRELOAD_TXNS);
 }
 
 // ══════════════════════════════════════════════

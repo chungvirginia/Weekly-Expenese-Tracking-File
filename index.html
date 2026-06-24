@@ -286,11 +286,8 @@
       <div class="donut-legend" id="donutLegend"></div>
     </div>
   </div>
-  <div class="section-title">各帳戶使用率</div>
-  <div class="chart-wrap">
-    <div class="chart-title">月度預算使用率</div>
-    <div class="bar-chart" id="usageBarChart"></div>
-  </div>
+  <div class="section-title">各類別消費總額</div>
+  <div class="budget-cards" id="catSpendCards" style="margin-bottom:10px"></div>
   <div class="section-title">每日支出趨勢</div>
   <div class="chart-wrap">
     <div class="chart-title">本月每日支出</div>
@@ -498,7 +495,7 @@ const CARDS = [
   { id:'boc_master', name:'BOC Master', color:'#4a90d9', emoji:'🔵', defaultBudget:4000  },
   { id:'boc_visa',   name:'BOC Visa',   color:'#2e6db4', emoji:'🔷', defaultBudget:3000  },
   { id:'amex',       name:'AMEX',       color:'#c9a227', emoji:'🟡', defaultBudget:4000  },
-  { id:'cash',       name:'現金',       color:'#9090a8', emoji:'💵', defaultBudget:4000  },
+  { id:'cash',       name:'BOC Saving', color:'#74b9ff', emoji:'🏦', defaultBudget:4000  },
 ];
 
 const EMOJI_LIST = ['🏠','💡','🚿','🔌','🌊','🔥','📡','🛁','🪟','🚪','🧹','🧺',
@@ -653,22 +650,28 @@ function renderMTD() {
 }
 
 function renderBudgetCards() {
-  const txns = loadData().filter(t => isInMonth(t.date, currentMonthOffset) && t.type === 'expense');
+  // YTD: all expense transactions from Jan 1 of current year
+  const now = new Date();
+  const ytdStart = new Date(now.getFullYear(), 0, 1);
+  const allTxns = loadData();
+  const ytdTxns = allTxns.filter(t => t.type === 'expense' && new Date(t.date) >= ytdStart);
+  // Also keep monthly txns for progress bar
+  const monthTxns = allTxns.filter(t => isInMonth(t.date, currentMonthOffset) && t.type === 'expense');
   const budgets = loadBudgets();
   const container = document.getElementById('budgetCards');
   container.innerHTML = CARDS.map(card => {
-    const spent = txns.filter(t => t.card === card.id).reduce((s, t) => s + t.amount, 0);
+    const ytdSpent = ytdTxns.filter(t => t.card === card.id).reduce((s, t) => s + t.amount, 0);
+    const monthSpent = monthTxns.filter(t => t.card === card.id).reduce((s, t) => s + t.amount, 0);
     const budget = budgets[card.id];
-    const remaining = budget - spent;
-    const pct = Math.min(100, budget > 0 ? (spent / budget) * 100 : 0);
+    const pct = Math.min(100, budget > 0 ? (monthSpent / budget) * 100 : 0);
     const sc = pct >= 90 ? 'danger' : pct >= 70 ? 'warning' : 'safe';
     const fc = pct >= 90 ? 'var(--danger)' : pct >= 70 ? 'var(--warning)' : card.color;
     return `<div class="budget-card ${sc}">
       <div class="card-accent" style="background:${card.color}"></div>
       <span class="card-icon">${card.emoji}</span>
       <div class="card-name">${card.name}</div>
-      <div class="card-remaining">$${remaining.toLocaleString()}</div>
-      <div class="card-total">月預算 $${budget.toLocaleString()}</div>
+      <div class="card-remaining" style="font-size:16px">$${ytdSpent.toLocaleString()}</div>
+      <div class="card-total">YTD 支出 · 月預算 $${budget.toLocaleString()}</div>
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${fc}"></div></div>
     </div>`;
   }).join('');
@@ -763,7 +766,7 @@ function renderAllTxns() {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>本月暫無記錄</p></div>`;
     return;
   }
-  container.innerHTML = txns.slice().reverse().map(t => txnHTML(t)).join('');
+  container.innerHTML = txns.slice().sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id)).map(t => txnHTML(t)).join('');
 }
 
 // ══════════════════════════════════════════════
@@ -772,7 +775,7 @@ function renderAllTxns() {
 function renderAnalysis() {
   const txns = loadData().filter(t => isInMonth(t.date, currentMonthOffset) && t.type === 'expense');
   renderDonut(txns);
-  renderUsageBars(txns);
+  renderCatSpendCards(txns);
   renderLineChart(txns);
 }
 
@@ -807,17 +810,26 @@ function renderDonut(txns) {
   }).join('');
 }
 
-function renderUsageBars(txns) {
-  const budgets = loadBudgets();
-  document.getElementById('usageBarChart').innerHTML = CARDS.map(card => {
-    const spent = txns.filter(t => t.card === card.id).reduce((s, t) => s + t.amount, 0);
-    const budget = budgets[card.id];
-    const pct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
-    const color = pct >= 90 ? 'var(--danger)' : pct >= 70 ? 'var(--warning)' : card.color;
-    return `<div class="bar-row">
-      <span class="bar-row-label">${card.name}</span>
-      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
-      <span class="bar-row-val" style="color:${color}">${Math.round(pct)}%</span>
+function renderCatSpendCards(txns) {
+  const catMap = {};
+  txns.forEach(t => { catMap[t.category] = (catMap[t.category] || 0) + t.amount; });
+  const total = Object.values(catMap).reduce((s, v) => s + v, 0);
+  const entries = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+  const container = document.getElementById('catSpendCards');
+  if (!entries.length) {
+    container.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">本月暫無支出記錄</div>';
+    return;
+  }
+  container.innerHTML = entries.map(([catId, amt]) => {
+    const cat = getCatById(catId);
+    const pct = total > 0 ? Math.round(amt / total * 100) : 0;
+    return `<div class="budget-card safe" style="cursor:default">
+      <div class="card-accent" style="background:${cat.color}"></div>
+      <span class="card-icon">${cat.emoji}</span>
+      <div class="card-name">${cat.label}</div>
+      <div class="card-remaining" style="color:${cat.color};font-size:16px">$${amt.toLocaleString()}</div>
+      <div class="card-total">${pct}% 佔本月支出</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${cat.color}"></div></div>
     </div>`;
   }).join('');
 }
@@ -885,12 +897,18 @@ function renderSettings() {
 function saveBudgets() {
   const data = {};
   CARDS.forEach(c => {
-    const val = parseFloat(document.getElementById('budget_'+c.id).value);
-    data[c.id] = isNaN(val) ? c.defaultBudget : val;
+    const el = document.getElementById('budget_'+c.id);
+    const val = el ? parseFloat(el.value) : NaN;
+    data[c.id] = (!isNaN(val) && val >= 0) ? val : c.defaultBudget;
   });
   saveBudgetData(data);
   renderOverview();
-  renderSettings();
+  // Re-render settings WITHOUT resetting input values (use stored data)
+  const budgets = loadBudgets();
+  CARDS.forEach(c => {
+    const el = document.getElementById('budget_'+c.id);
+    if (el) el.value = budgets[c.id];
+  });
   showToast('✅ 預算設定已儲存');
 }
 

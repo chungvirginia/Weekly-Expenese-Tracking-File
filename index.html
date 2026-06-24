@@ -89,6 +89,9 @@
   .day-chip .day-dot { width:4px; height:4px; background:var(--safe); border-radius:50%; margin:3px auto 0; }
   .day-chip.active .day-dot { background:rgba(255,255,255,.6); }
   .day-chip .day-dot.hidden { visibility:hidden; }
+  .day-chip.no-record { opacity:0.45; }
+  .day-chip.future-day { opacity:0.25; }
+  .day-chip.no-record .day-num { color:var(--text3); }
 
   /* Transaction list */
   .txn-list { display:flex; flex-direction:column; gap:7px; }
@@ -454,6 +457,23 @@
   </div>
 </div>
 
+
+<!-- Cat Detail Modal -->
+<div class="modal-overlay" id="catDetailModal" onclick="handleModalBg(event,'catDetailModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <span id="catDetailIcon" style="font-size:28px"></span>
+      <div>
+        <h2 id="catDetailTitle" style="margin-bottom:2px"></h2>
+        <div id="catDetailSub" style="font-size:12px;color:var(--text2)"></div>
+      </div>
+    </div>
+    <div id="catDetailTxns" class="txn-list"></div>
+    <button class="btn-secondary" style="margin-top:14px" onclick="closeModal('catDetailModal')">關閉</button>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -532,6 +552,7 @@ let editingTxnId = null;
 let editSelectedType = 'expense';
 let editSelectedCatId = 'food';
 let editSelectedCardId = 'mox_cc';
+let catDetailCatId = null;
 
 function loadData() { return JSON.parse(localStorage.getItem('bt_txns') || '[]'); }
 function saveData(d) { localStorage.setItem('bt_txns', JSON.stringify(d)); }
@@ -678,26 +699,50 @@ function renderBudgetCards() {
 }
 
 function renderDayStrip() {
-  const allDates = getMonthDates(currentMonthOffset);
   const txns = loadData();
   const today = formatDate(new Date());
   const dayNames = ['日','一','二','三','四','五','六'];
 
-  // Show last 7 days of the month (or current week)
+  // Find the Monday of the week containing the reference day
   const now = new Date();
   const { year, month } = getMonthRange(currentMonthOffset);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const refDay = currentMonthOffset === 0 ? now.getDate() : daysInMonth;
-  const startDay = Math.max(1, refDay - 6);
-  const show = allDates.slice(startDay - 1, refDay);
+
+  // Reference date: today for current month, last day for past months
+  let refDate;
+  if (currentMonthOffset === 0) {
+    refDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else {
+    refDate = new Date(year, month, daysInMonth);
+  }
+
+  // Find Monday of the week containing refDate (week starts Monday)
+  const dow = refDate.getDay(); // 0=Sun,1=Mon,...,6=Sat
+  const daysFromMon = (dow === 0) ? 6 : dow - 1; // days since Monday
+  const monday = new Date(refDate);
+  monday.setDate(refDate.getDate() - daysFromMon);
+
+  // Build 7-day array Mon-Sun
+  const show = Array.from({length: 7}, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
 
   const strip = document.getElementById('weekStrip');
   strip.innerHTML = show.map(d => {
-    const ds = formatDate(d);
+    // Format date using local time to avoid UTC offset bug
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const hasTxn = txns.some(t => t.date === ds);
     const isToday = ds === today;
     const isSelected = ds === selectedDay;
-    return `<div class="day-chip ${isSelected ? 'active' : ''}" onclick="selectDay('${ds}')">
+    const isFuture = d > new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // Style: active=selected, today=highlighted, no-record=dim, future=very dim
+    let chipClass = 'day-chip';
+    if (isSelected) chipClass += ' active';
+    else if (isFuture) chipClass += ' future-day';
+    else if (!hasTxn) chipClass += ' no-record';
+    return `<div class="${chipClass}" onclick="selectDay('${ds}')">
       <div class="day-name">${dayNames[d.getDay()]}</div>
       <div class="day-num">${d.getDate()}</div>
       <div class="day-dot ${hasTxn ? '' : 'hidden'}"></div>
@@ -823,15 +868,35 @@ function renderCatSpendCards(txns) {
   container.innerHTML = entries.map(([catId, amt]) => {
     const cat = getCatById(catId);
     const pct = total > 0 ? Math.round(amt / total * 100) : 0;
-    return `<div class="budget-card safe" style="cursor:default">
+    return `<div class="budget-card safe" style="cursor:pointer" onclick="openCatDetail('${catId}')">
       <div class="card-accent" style="background:${cat.color}"></div>
       <span class="card-icon">${cat.emoji}</span>
       <div class="card-name">${cat.label}</div>
       <div class="card-remaining" style="color:${cat.color};font-size:16px">$${amt.toLocaleString()}</div>
-      <div class="card-total">${pct}% 佔本月支出</div>
+      <div class="card-total">${pct}% · 點擊查看明細</div>
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${cat.color}"></div></div>
     </div>`;
   }).join('');
+}
+
+function openCatDetail(catId) {
+  catDetailCatId = catId;
+  const cat = getCatById(catId);
+  const txns = loadData().filter(t => isInMonth(t.date, currentMonthOffset) && t.type === 'expense' && t.category === catId);
+  const total = txns.reduce((s, t) => s + t.amount, 0);
+
+  document.getElementById('catDetailIcon').textContent = cat.emoji;
+  document.getElementById('catDetailTitle').textContent = cat.label;
+  document.getElementById('catDetailSub').textContent = `本月共 ${txns.length} 筆 · 合計 $${total.toLocaleString()}`;
+  document.getElementById('catDetailTitle').style.color = cat.color;
+
+  const container = document.getElementById('catDetailTxns');
+  if (!txns.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>本月暫無此類別記錄</p></div>';
+  } else {
+    container.innerHTML = txns.slice().sort((a,b) => b.date.localeCompare(a.date)).map(t => txnHTML(t)).join('');
+  }
+  document.getElementById('catDetailModal').classList.add('show');
 }
 
 function renderLineChart(txns) {
